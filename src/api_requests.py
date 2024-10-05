@@ -24,25 +24,37 @@ def construct_payload(base64_image: str, model_name: str = "gpt-4o-mini-2024-07-
     payload = {
         "model": model_name,
         "messages": [
-            {
-                "role": "system", "content": "You are a highly skilled OCR assistant specializing in reading German text written in the "
-                "Fraktur typeface. Your task is to transcribe and translate text accurately, following a structured page layout."
-            },
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": "Please follow these steps carefully:\n\n"
-                        "1. **Transcription**: Begin by transcribing the entire page from the German Fraktur typeface into modern German text. \n\n"
-                        "   - If the page contains a header or chapter heading at the top, enclose it within `<header></header>` tags.\n"
-                        "   - If there is a main body of text, transcribe it and enclose it within `<german></german>` tags.\n"
-                        "   - If there are footnotes or annotations at the bottom of the page, enclose them within `<footnotes></footnotes>` tags.\n\n"
-                        "2. **Translation**: After the transcription of the German text is complete, translate the entire text into English.\n\n"
-                        "   - Enclose the translated English text within `<english></english>` tags.\n\n"
-                        "Make sure to maintain the original formatting and structure of the text, ensuring that all elements "
-                        "(headers, body, and footnotes) are properly categorized and tagged. Provide both the transcribed German "
-                        "text and the English translation."
+          {"role": "system", "content": "You have three roles. First of all you are a professional OCR assistant. "
+           "Secondly, you identify the parts of your transcriptions to belong to header, body and footer sections. "
+           "Lastly, you are a GERMAN to ENGLISH translator that stays loyal to the style and "
+           "character of the original German text."
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "This work consists of three distinct subtasks:\n\n"
+                        "**Step 1. OCR:** Transcribe the whole page into German and wrap the output in <raw_german></raw_german> tags. "
+                        "Pay great attention to transcribing all the text and all the fraktur characters you detect in your OCR work \n\n"
+                        "**Step 2. Layout Analysis:**. Look at the image of the page and your transcription again "
+                        "and redo the transcription like this: \n"
+                        "   - Wrap your second transcription inside <german></german> tags.\n"
+                        "   - Stay loyal to the new line characters (\\n) you have transcribed in the OCR step above. "
+                        "I want you to divide the parts of the transcription inside the <raw_german></raw_german> tags "
+                        "into header, body, and footer sections: \n"
+                        "   - If, and only if, you detected a header text (like a chapter title or a section heading), "
+                        "wrap  it inside <header></header> tags. If there's no header text, "
+                        "don't include any <header></header> tags at all. \n"
+                        "   - Next, wrap the body of the text inside <body></body> tags. \n"
+                        "   - Finally, and if, and only if, you detected any footnotes, wrap it inside <footer></footer> tags. \n\n"
+                        "If there's no footer text, don't include any <footer></footer> tags at all. "
+                        "**Step 3. Translation DE2EN:**. Translate the German text into English while maintaining the header, "
+                        "body, and footer sections.\n\n"
+                        "EXAMPLE OUTPUT FORMAT:\n"
+                        "<raw_german>.................</raw_german>\n\n"
+                        "<german><header>....</header>\n<body>..............</body>\n<footer>......</footer>\n</german>\n\n"
+                        "<english>....................</english>\n"
               },
               {
                 "type": "image_url",
@@ -55,6 +67,7 @@ def construct_payload(base64_image: str, model_name: str = "gpt-4o-mini-2024-07-
         ],
         "max_tokens": 10000
     }
+    
     return payload
 
 
@@ -90,30 +103,31 @@ def single_page(fname, model_name, headers, plotter, pageno):
     save_images(y_lo, y_hi, x_lo, x_hi, arr, pageno)
     
     # convert to base64 to upload to OpenAI API
-    base64_image = encode_image(cropped_image)
+    base64_image = encode_image(image)
     
     response_dict = send_gpt_request(base64_image, model_name, headers)
 
     content = response_dict['choices'][0]['message']['content']
     
     # Replace repeated newline chars with single ones. '\n\n\n' -> '\n'
-    content = re.sub(r'\n+', '\n', content)
+    # content = re.sub(r'\n+', '\n', content)
+    raw_german_text = re.search(r'<raw_german>(.*?)</raw_german>', content, re.DOTALL).group(1)
     german_text = re.search(r'<german>(.*?)</german>', content, re.DOTALL).group(1)
     english_text = re.search(r'<english>(.*?)</english>', content, re.DOTALL).group(1)
     
     if plotter:
         # Plot the images with size proportional to their pixel count.
         height, width, _ = np.array(image).shape
-        plt.figure(figsize=(width/500, height/500))
+        plt.figure(figsize=(width/300, height/300))
         plt.imshow(image); 
         plt.gca().axis('off')
         plt.show()
 
         plt.figure()
         height, width, _ = np.array(cropped_image).shape
-        plt.figure(figsize=(width/500, height/500))
+        plt.figure(figsize=(width/300, height/300))
         plt.imshow(cropped_image); 
         plt.gca().axis('off')
         plt.show()
 
-    return german_text, english_text
+    return raw_german_text, german_text, english_text

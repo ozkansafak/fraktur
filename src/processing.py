@@ -67,7 +67,7 @@ def extract_image_bbox(log_spectrum: np.ndarray, axis_name: str = 'y', plotter: 
     n = len(form)
 
     lo, hi = None, None
-    pad = 8
+    pad = 5
     for i in range(n):
         if lo is None and form[i] > 0 and all(form[i:i+5] > 0):
             lo = max(0, i-pad)
@@ -112,7 +112,6 @@ def save_images(y_lo: int, y_hi: int, x_lo: int, x_hi: int, arr: np.ndarray, pag
     image = Image.fromarray(arr[y_lo:y_hi, x_lo:x_hi])
     plt.imshow(image)
     plt.gca().axis('off')
-    print(f'Saved ../figures/{pageno}_cropped.png')
     plt.savefig(f'../figures/{pageno}_cropped.png', bbox_inches='tight')
 
     plt.imshow(image)
@@ -120,7 +119,6 @@ def save_images(y_lo: int, y_hi: int, x_lo: int, x_hi: int, arr: np.ndarray, pag
     image = Image.fromarray(arr)
     plt.imshow(image)
     plt.gca().axis('off')
-    print(f'Saved ../figures/{pageno}.png')
     plt.savefig(f'../figures/{pageno}.png', bbox_inches='tight')
     plt.close(fig)
 
