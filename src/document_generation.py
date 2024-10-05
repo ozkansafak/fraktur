@@ -1,6 +1,9 @@
 from fpdf import FPDF
 from docx import Document
+from docx.shared import Pt, RGBColor
 import re
+
+
 
 # def save_document(english_texts: dict, folder_name: str = '', language: str = 'English') -> None:
 #     """
@@ -88,79 +91,98 @@ def add_bottom_border(paragraph, border_size='1', border_color='auto', border_sp
     bottom_border.set(qn('w:color'), border_color)
     borders.append(bottom_border)
 
+from docx import Document
+from docx.shared import Pt, RGBColor
+from docx.enum.style import WD_STYLE_TYPE
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+import re
+
+def add_bottom_border(paragraph, border_size='1', border_color='auto', border_space='1', border_val='single'):
+    """
+    Adds a bottom border to a paragraph by modifying its XML properties.
+    """
+    p = paragraph._p  # Get the XML element of the paragraph
+    pPr = p.get_or_add_pPr()
+    borders = pPr.find(qn('w:pBdr'))
+    if borders is None:
+        borders = OxmlElement('w:pBdr')
+        pPr.append(borders)
+    bottom_border = OxmlElement('w:bottom')
+    bottom_border.set(qn('w:val'), border_val)
+    bottom_border.set(qn('w:sz'), border_size)
+    bottom_border.set(qn('w:space'), border_space)
+    bottom_border.set(qn('w:color'), border_color)
+    borders.append(bottom_border)
+
 def save_document(english_texts: dict, folder_name: str = '', language: str = 'English') -> None:
     """
-    Creates a .docx document from a dictionary of texts, adds a footer with a smaller font size than the header,
+    Creates a .docx document from a dictionary of texts, adds a header and footer with dynamic page numbers,
     and inserts a horizontal line between the body and the footer.
-
-    Args:
-        english_texts (dict): A dictionary where keys are page numbers and values are text.
-        folder_name (str): The folder name to save the document.
-        language (str): The file name for the document ('English' or 'German').
-
-    Returns:
-        None
     """
     document = Document()
-    
+
+    styles = document.styles
+    if 'CustomHeaderStyle' not in styles:
+        custom_style = styles.add_style('CustomHeaderStyle', WD_STYLE_TYPE.PARAGRAPH)
+        custom_style.font.name = 'Arial'
+        custom_style.font.size = Pt(10)
+        custom_style.font.color.rgb = RGBColor(0, 0, 0)
+        custom_style.font.bold = False
+        custom_style.font.italic = False
+    else:
+        custom_style = styles['CustomHeaderStyle']
+
     # Add and customize the header and footer
     section = document.sections[0]
     
-    # Add header
+    # Configure Header
     header = section.header
     header_paragraph = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
-    # header_run = header_paragraph.add_run("Document Header")
-    # header_run.font.size = Pt(16)  # Header font size
-    
-    # Add footer
+    header_paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # Center alignment
+    header_paragraph.clear()
+
+    # Configure Footer 
     footer = section.footer
     footer_paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
     footer_paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # Center alignment
-
-    # Clear existing runs in footer paragraph
-    footer_paragraph.clear()
-
-    # Add page number to footer
-    page_run = footer_paragraph.add_run()
-    page_run.font.size = Pt(10)  # Footer font size
-
-    fldChar1 = OxmlElement('w:fldChar')
-    fldChar1.set(qn('w:fldCharType'), 'begin')
-
-    instrText = OxmlElement('w:instrText')
-    instrText.set(qn('xml:space'), 'preserve')
-    instrText.text = 'PAGE'
-
-    fldChar2 = OxmlElement('w:fldChar')
-    fldChar2.set(qn('w:fldCharType'), 'end')
-
-    page_run._r.append(fldChar1)
-    page_run._r.append(instrText)
-    page_run._r.append(fldChar2)
 
     # Create a footnote style
     styles = document.styles
     if 'FootnoteStyle' not in styles:
         footnote_style = styles.add_style('FootnoteStyle', WD_STYLE_TYPE.PARAGRAPH)
-        footnote_style.font.size = Pt(10)  # Footnote font size
+        footnote_style.font.size = Pt(9)  # Footnote font size
     else:
         footnote_style = styles['FootnoteStyle']
-    
-    for pageno in sorted(english_texts.keys()):
+        
+    for index, pageno in enumerate(sorted(english_texts.keys())):
         text = english_texts[pageno]
         text = re.sub(r'\n+', '\n', text)
-
-        # Add page number as a heading
-        document.add_heading(f"Page {pageno}", level=1)
+    
+        # Insert a page break before each new page except the first
+        if index > 0:
+            document.add_page_break()
 
         # Extract header
         header_match = re.search(r'<header>(.*?)</header>', text, re.DOTALL)
-        if header_match is not None: 
+        if header_match is None:
+            header_text = ""
+        else:
             header_text = header_match.group(1)
-            document.add_heading(header_text, level=1) 
-            # Create an empty paragraph, then add bottom border to the paragraph
-            hr_paragraph = document.add_paragraph()
-            add_bottom_border(hr_paragraph, border_size='2', border_color='auto', border_space='1', border_val='single')
+        header_text = f"Page {pageno}\n{header_text}"
+
+        # Add header text as a heading in the body
+        header_paragraph = document.add_heading(header_text)
+        header_paragraph.style = custom_style
+
+        for run in header_paragraph.runs:
+            run.font.size = Pt(14)
+            run.font.color.rgb = RGBColor(0, 0, 0)
+        
+        # Add a bottom border after the header
+        hr_paragraph = document.add_paragraph()
+        add_bottom_border(hr_paragraph, border_size='2', border_color='auto', border_space='1', border_val='single')
 
         # Extract body
         body_match = re.search(r'<body>(.*?)</body>', text, re.DOTALL)
@@ -171,18 +193,15 @@ def save_document(english_texts: dict, folder_name: str = '', language: str = 'E
         
         # Extract footnotes
         footer_match = re.search(r'<footer>(.*?)</footer>', text, re.DOTALL)
-        if footer_match is not None: 
-            # First, add a horizontal line between body and footer
-            # Create an empty paragraph, then add bottom border to the paragraph
+        if footer_match is not None:
+            footer_text = footer_match.group(1)
+            # Add a horizontal line between body and footnotes
             hr_paragraph = document.add_paragraph()
             add_bottom_border(hr_paragraph, border_size='2', border_color='auto', border_space='1', border_val='single')
-
-            footer_text = footer_match.group(1)
             # Add footnotes with the footnote style
-            for footnote in footer_text.split('\n'):
-                footnote_paragraph = document.add_paragraph(footnote)
-                footnote_paragraph.style = footnote_style
-
+            footnote_paragraph = document.add_paragraph(footer_text)
+            footnote_paragraph.style = footnote_style
+    
     # Save the document
     fname = f'../output/{folder_name}/{language}'
     document.save(f'{fname}.docx')
