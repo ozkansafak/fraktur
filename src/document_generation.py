@@ -147,3 +147,5 @@ def save_document(english_texts: dict, folder_name: str = '', language: str = 'E
     # Save the document
     fname = f'../output/{folder_name}/{language}'
     document.save(f'{fname}.docx')
+
+    return document, fname
