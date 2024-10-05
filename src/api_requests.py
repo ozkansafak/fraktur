@@ -34,27 +34,64 @@ def construct_payload(base64_image: str, model_name: str = "gpt-4o-mini-2024-07-
             "content": [
               {
                 "type": "text",
-                "text": "This work consists of three distinct subtasks:\n\n"
-                        "**Step 1. OCR:** Transcribe the whole page into German and wrap the output in <raw_german></raw_german> tags. "
-                        "Pay great attention to transcribing all the text and all the fraktur characters you detect in your OCR work \n\n"
-                        "**Step 2. Layout Analysis:**. Look at the image of the page and your transcription again "
-                        "and redo the transcription like this: \n"
-                        "   - Wrap your second transcription inside <german></german> tags.\n"
-                        "   - Stay loyal to the new line characters (\\n) you have transcribed in the OCR step above. "
-                        "I want you to divide the parts of the transcription inside the <raw_german></raw_german> tags "
-                        "into header, body, and footer sections: \n"
-                        "   - If, and only if, you detected a header text (like a chapter title or a section heading), "
-                        "wrap  it inside <header></header> tags. If there's no header text, "
-                        "don't include any <header></header> tags at all. \n"
-                        "   - Next, wrap the body of the text inside <body></body> tags. \n"
-                        "   - Finally, and if, and only if, you detected any footnotes, wrap it inside <footer></footer> tags. \n\n"
-                        "If there's no footer text, don't include any <footer></footer> tags at all. "
-                        "**Step 3. Translation DE2EN:**. Translate the German text into English while maintaining the header, "
-                        "body, and footer sections.\n\n"
-                        "EXAMPLE OUTPUT FORMAT:\n"
-                        "<raw_german>.................</raw_german>\n\n"
-                        "<german><header>....</header>\n<body>..............</body>\n<footer>......</footer>\n</german>\n\n"
-                        "<english>....................</english>\n"
+                "text": 
+"""Instructions:
+
+You are to perform three steps on the provided image of a document.
+
+**Step 1: OCR Transcription**
+
+Task: Transcribe the entire text from the image into German, including all Fraktur characters.
+
+Attention: Pay close attention to accurately capturing all text elements.
+
+Formatting: Wrap the entire transcription in <raw_german></raw_german> tags.
+
+Separator: When you are done with Step 1, print the separator line:
+
+--------------------------------------------------------------------
+**Step 2: Header-Body-Footer Analysis**
+
+Review: Look at the image and your transcription from Step 1.
+
+Verification: Ensure you haven't missed any parts; if you did, transcribe and include them now.
+
+Line Breaks: Stay faithful to the line breaks (\n) you recorded in Step 1.
+
+Categorization:
+
+Header: If you detect a header (e.g., chapter title or section heading), wrap it inside <header></header> tags. If there's no header, omit the <header></header> tags.
+Body: Wrap the main body of the text inside <body></body> tags.
+Footer: If you detect any footnotes, wrap them inside <footer></footer> tags. If there are no footnotes, omit the <footer></footer> tags.
+Formatting: Wrap this structured transcription inside <german></german> tags.
+
+Separator: When you are done with Step 2, print the separator line again:
+
+--------------------------------------------------------------------
+**Step 3: Translation (German to English)**
+
+Task: Translate the structured German text from Step 2 into English.
+Structure: Maintain the same <header>, <body>, and <footer> sections in your translation.
+Formatting: Wrap the translated text inside <english></english> tags.
+
+Example Output Format:
+
+<raw_german>
+... (transcribed German text) ...
+</raw_german>
+--------------------------------------------------------------------
+<german>
+<header> ... </header>
+<body> ... </body>
+<footer> ... </footer>
+</german>
+--------------------------------------------------------------------
+<english>
+<header> ... </header>
+<body> ... </body>
+<footer> ... </footer>
+</english>"""                
+
               },
               {
                 "type": "image_url",
@@ -65,7 +102,8 @@ def construct_payload(base64_image: str, model_name: str = "gpt-4o-mini-2024-07-
             ]
           }
         ],
-        "max_tokens": 10000
+        "max_tokens": 10000,
+        "temperature": 0.0
     }
     
     return payload
@@ -103,17 +141,17 @@ def single_page(fname, model_name, headers, plotter, pageno):
     save_images(y_lo, y_hi, x_lo, x_hi, arr, pageno)
     
     # convert to base64 to upload to OpenAI API
-    base64_image = encode_image(image)
+    base64_image = encode_image(cropped_image)
     
     response_dict = send_gpt_request(base64_image, model_name, headers)
 
-    content = response_dict['choices'][0]['message']['content']
+    raw_text = response_dict['choices'][0]['message']['content']
     
     # Replace repeated newline chars with single ones. '\n\n\n' -> '\n'
     # content = re.sub(r'\n+', '\n', content)
-    raw_german_text = re.search(r'<raw_german>(.*?)</raw_german>', content, re.DOTALL).group(1)
-    german_text = re.search(r'<german>(.*?)</german>', content, re.DOTALL).group(1)
-    english_text = re.search(r'<english>(.*?)</english>', content, re.DOTALL).group(1)
+    raw_german_text = re.search(r'<raw_german>(.*?)</raw_german>', raw_text, re.DOTALL).group(1)
+    german_text = re.search(r'<german>(.*?)</german>', raw_text, re.DOTALL).group(1)
+    english_text = re.search(r'<english>(.*?)</english>', raw_text, re.DOTALL).group(1)
     
     if plotter:
         # Plot the images with size proportional to their pixel count.
@@ -130,4 +168,4 @@ def single_page(fname, model_name, headers, plotter, pageno):
         plt.gca().axis('off')
         plt.show()
 
-    return raw_german_text, german_text, english_text
+    return raw_text, raw_german_text, german_text, english_text

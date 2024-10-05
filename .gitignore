@@ -8,4 +8,5 @@ figures/**
 output/**
 **/__pycache__/**
 **/.ipynb_checkpoints
-Der Weltkrieg v8 Chap 4F (in Fraktur)
+**/data/Der Weltkrieg v8 Chap 4F (in Fraktur)
+*.ipynb
