@@ -1,71 +1,11 @@
-from fpdf import FPDF
 from docx import Document
 from docx.shared import Pt, RGBColor
-import re
-
-
-
-# def save_document(english_texts: dict, folder_name: str = '', language: str = 'English') -> None:
-#     """
-#     Creates a .docx document from a dictionary of English texts.
-
-#     Args:
-#         english_texts (dict): A dictionary where keys are page numbers and values are English text.
-#         folder_name (str): The folder name to save the document.
-#         language (str): The file name for the document ('English' or 'German')
-
-#     Returns:
-#         None
-#     """
-#     document = Document()
-#     for pageno in sorted(english_texts.keys()):
-#         text = english_texts[pageno]
-#         text = re.sub(r'\n+', '\n', text)
-
-#         # Add page number
-#         document.add_heading(f"Page {pageno}", level=1)
-
-#         # Extract header
-#         header = re.search(r'<header>(.*?)</header>', text, re.DOTALL)
-#         if header is not None: 
-#             document.add_heading(header.group(1), level=1) 
-
-#         # Extract body
-#         body = re.search(r'<body>(.*?)</body>', text, re.DOTALL).group(1)
-#         for paragraph in body.split('\n'):
-#             document.add_paragraph(paragraph)
-
-#         # Extract footnotes
-#         footer = re.search(r'<footer>(.*?)</footer>', text, re.DOTALL)
-#         if footer is not None: 
-#             document.add_heading(footer.group(1), level=2) 
-
-#     # save as docx first
-#     fname = f'../output/{folder_name}/{language}'
-#     document.save(f'{fname}.docx')
-
-from docx import Document
-from docx.shared import Pt
+from docx.oxml.ns import qn
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
-import re
-
-from docx import Document
-from docx.shared import Pt
-from docx.enum.style import WD_STYLE_TYPE
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
 import re
 
-from docx import Document
-from docx.shared import Pt
-from docx.enum.style import WD_STYLE_TYPE
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
-import re
 
 def add_bottom_border(paragraph, border_size='1', border_color='auto', border_space='1', border_val='single'):
     """
@@ -189,7 +129,9 @@ def save_document(english_texts: dict, folder_name: str = '', language: str = 'E
         if body_match:
             body = body_match.group(1)
             for paragraph in body.split('\n'):
-                document.add_paragraph(paragraph)
+                paragraph = document.add_paragraph(paragraph)
+                paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
+
         
         # Extract footnotes
         footer_match = re.search(r'<footer>(.*?)</footer>', text, re.DOTALL)

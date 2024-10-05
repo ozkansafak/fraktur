@@ -145,13 +145,17 @@ def single_page(fname, model_name, headers, plotter, pageno):
     
     response_dict = send_gpt_request(base64_image, model_name, headers)
 
-    raw_text = response_dict['choices'][0]['message']['content']
+    content = response_dict['choices'][0]['message']['content']
     
-    # Replace repeated newline chars with single ones. '\n\n\n' -> '\n'
-    # content = re.sub(r'\n+', '\n', content)
-    raw_german_text = re.search(r'<raw_german>(.*?)</raw_german>', raw_text, re.DOTALL).group(1)
-    german_text = re.search(r'<german>(.*?)</german>', raw_text, re.DOTALL).group(1)
-    english_text = re.search(r'<english>(.*?)</english>', raw_text, re.DOTALL).group(1)
+    # Replace repeated newline chars with a single one. '\n\n\n' -> '\n'
+    content = re.sub(r'\n+', '\n', content)
+    import ipdb
+    try:
+        raw_german_text = re.search(r'<raw_german>(.*?)</raw_german>', content, re.DOTALL).group(1)
+    except:
+        ipdb.set_trace()
+    german_text = re.search(r'<german>(.*?)</german>', content, re.DOTALL).group(1)
+    english_text = re.search(r'<english>(.*?)</english>', content, re.DOTALL).group(1)
     
     if plotter:
         # Plot the images with size proportional to their pixel count.
@@ -168,4 +172,4 @@ def single_page(fname, model_name, headers, plotter, pageno):
         plt.gca().axis('off')
         plt.show()
 
-    return raw_text, raw_german_text, german_text, english_text
+    return content, raw_german_text, german_text, english_text
