@@ -27,6 +27,7 @@ GPT-4o performs three separate subtasks in succession.
 The English text is converted into a .docx file which can later be converted into a pdf, if needed. 
 
 
+**PIPELINE**
 <div align="center">
   <img src="output/readme figures/456.png" alt="Original Image" style="height: 400px; object-fit: contain;">
   <p>Fig 1. Original image provided in pdf format.</p>
@@ -45,8 +46,8 @@ The English text is converted into a .docx file which can later be converted int
   <img src="output/readme figures/FFT-x form.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
   <img src="output/readme figures/FFT-y form.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
 
-  <p>Fig 3. (a) the mean log-energy spectrum in x-dir, and mean taken in y-dir  <br>
-  (b) the mean log-energy spectrum in y-dir, and mean taken in x-dir</p>
+  <p>Fig 3. (a) the mean log-energy spectrum in x-dir, (mean operation applied in y-dir)  <br>
+  (b) the mean log-energy spectrum in y-dir, (mean operation applied in x-dir)</p>
 </div>
 
 
@@ -57,19 +58,21 @@ The English text is converted into a .docx file which can later be converted int
 </div>
 <br>
 
-
-
 <div align="center">
   <img src="output/readme figures/German 456.png" alt="Cropped Image" style="height: 300px; object-fit: contain;">
-
-  <p>Fig 4.  German Transcription of original Fraktur document </p>
-</div>
-<br>
-
-
-<div align="center">
   <img src="output/readme figures/English 456.png" alt="Cropped Image" style="height: 300px; object-fit: contain;">
 
-  <p>Fig 4.  English Translation of the German document</p>
+  <p>Fig 5. (a) German Transcription of original Fraktur document<br>
+    (b) English Translation of the German transcription</p>
 </div>
 
+
+**Modules Used:** <br>
+>numpy<br>
+Pillow<br>
+matplotlib<br>
+requests<br>
+pdf2image<br>
+openai<br>
+python-docx<br>
+ipdb<br>
