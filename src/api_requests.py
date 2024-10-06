@@ -104,8 +104,8 @@ Example Output Format:
             ]
           }
         ],
-        "max_tokens": 10000,
-        "temperature": 0.0
+        "max_tokens": 3000,
+        "temperature": 0.1
     }
     
     return payload
@@ -156,8 +156,24 @@ def single_page(fname, model_name, headers, plotter, pageno):
         raw_german_text = re.search(r'<raw_german>(.*?)</raw_german>', content, re.DOTALL).group(1)
     except:
         ipdb.set_trace()
-    german_text = re.search(r'<german>(.*?)</german>', content, re.DOTALL).group(1)
-    english_text = re.search(r'<english>(.*?)</english>', content, re.DOTALL).group(1)
+    
+    # Extract German
+    re_search = re.search(r'<german>(.*?)</german>', content, re.DOTALL)
+    if re_search is None:
+        # todo: Use logger here.
+        print(r'"<german>(.*?)</german>" were not found')
+        ipdb.set_trace()
+    else:
+        german_text = re_search.group(1)
+    
+    # Extract English
+    re_search = re.search(r'<english>(.*?)</english>', content, re.DOTALL)
+    if re_search is None:
+        # todo: Use logger here.
+        print(r'"<english>(.*?)</english>" were not found')
+        ipdb.set_trace()
+    else:
+        english_text = re_search.group(1)
     
     if plotter:
         # Plot the images with size proportional to their pixel count.

@@ -4,6 +4,7 @@ from docx.oxml.ns import qn
 from docx.enum.style import WD_STYLE_TYPE
 from docx.oxml import OxmlElement
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.shared import Inches
 import re
 
 
@@ -51,7 +52,12 @@ def save_document(english_texts: dict, folder_name: str = '', language: str = 'E
 
     # Add and customize the header and footer
     section = document.sections[0]
-    
+
+    # Set the left and right margins
+    section.left_margin = Inches(1)  # 1 inch left margin
+    section.right_margin = Inches(1)  # 1 inch right margin
+
+
     # Configure Header
     header = section.header
     header_paragraph = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
