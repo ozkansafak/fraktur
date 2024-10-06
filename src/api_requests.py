@@ -45,6 +45,8 @@ Task: Transcribe the entire text from the image into German, including all Frakt
 
 Attention: Pay close attention to accurately capturing all text elements.
 
+Attention 2: Make sure you're reading each line only once. 
+
 Formatting: Wrap the entire transcription in <raw_german></raw_german> tags.
 
 Caution: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
@@ -152,28 +154,33 @@ def single_page(fname, model_name, headers, plotter, pageno):
     # Replace repeated newline chars with a single one. '\n\n\n' -> '\n'
     content = re.sub(r'\n+', '\n', content)
     import ipdb
-    try:
-        raw_german_text = re.search(r'<raw_german>(.*?)</raw_german>', content, re.DOTALL).group(1)
-    except:
-        ipdb.set_trace()
     
-    # Extract German
-    re_search = re.search(r'<german>(.*?)</german>', content, re.DOTALL)
-    if re_search is None:
+    # Extract raw German OCR'ed text.
+    match = re.search(r'<raw_german>(.*?)</raw_german>', content, re.DOTALL)
+    if match is None:
         # todo: Use logger here.
-        print(r'"<german>(.*?)</german>" were not found')
+        print(r'"<raw_german>(.*?)</raw_german>" was not found')
         ipdb.set_trace()
     else:
-        german_text = re_search.group(1)
+        raw_german_text = match.group(1)
     
-    # Extract English
-    re_search = re.search(r'<english>(.*?)</english>', content, re.DOTALL)
-    if re_search is None:
+    # Extract german tags
+    match = re.search(r'<german>(.*?)</german>', content, re.DOTALL)
+    if match is None:
         # todo: Use logger here.
-        print(r'"<english>(.*?)</english>" were not found')
+        print(r'"<german>(.*?)</german>" was not found')
         ipdb.set_trace()
     else:
-        english_text = re_search.group(1)
+        german_text = match.group(1)
+    
+    # Extract english tags
+    match = re.search(r'<english>(.*?)</english>', content, re.DOTALL)
+    if match is None:
+        # todo: Use logger here.
+        print(r'"<english>(.*?)</english>" was not found')
+        ipdb.set_trace()
+    else:
+        english_text = match.group(1)
     
     if plotter:
         # Plot the images with size proportional to their pixel count.
