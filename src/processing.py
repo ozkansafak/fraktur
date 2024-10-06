@@ -33,7 +33,7 @@ def compute_log_spectrum_1d(arr: np.ndarray, axis: int, plotter: bool = False) -
     else:  # FFT along X (rows)
         fft_result = np.array([np.fft.fft(image_2d[i]) for i in range(image_2d.shape[0])])
 
-    # Compute log energy spectrum (squared FFT)
+    # Compute log energy spectrum (log squared FFT)
     log_spectrum = np.log(np.abs(fft_result) ** 2 + 1)
 
     # Plot heatmap
@@ -42,7 +42,7 @@ def compute_log_spectrum_1d(arr: np.ndarray, axis: int, plotter: bool = False) -
         axis_name = 'X' if axis == 1 else 'Y'
         plt.imshow(log_spectrum, aspect='equal', cmap='hot')
         plt.colorbar(label='Log Energy Spectrum')
-        plt.title(f'Energy Spectrum Along {axis_name}-axis')
+        plt.title(f'Log Energy Spectrum Along {axis_name}-axis')
         plt.xlabel(f'{axis_name}-axis')
         plt.ylabel(f'Frequency ({axis_name}-axis)')
         plt.gca().axis('off')
@@ -83,11 +83,12 @@ def extract_image_bbox(log_spectrum: np.ndarray, axis_name: str = 'y', plotter: 
             break
 
     if plotter:
+        s = {'X','Y'}.difference({axis_name}).pop() 
         plt.figure(figsize=(13, 2.2))
         plt.plot(form, 'k.-', alpha=.6)
         plt.plot(range(lo, hi+1), form[lo:hi+1], 'r.', alpha=1)
-        plt.title(axis_name)
-        plt.xlabel(f'Along {axis_name}-axis')
+        plt.title(f"FFT-{axis_name}")
+        plt.xlabel(f' {s}-axis')
         plt.xlim(0, len(form)-1)
         plt.show()
         

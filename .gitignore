@@ -4,8 +4,9 @@
 *.log
 *.out
 .vscode/**
-figures/**
 output/**
+!output/readme figures
+figures/**
 **/__pycache__/**
 **/.ipynb_checkpoints
 **/data/Der Weltkrieg v8 Chap 4F (in Fraktur)
