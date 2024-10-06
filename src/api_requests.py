@@ -47,6 +47,8 @@ Attention: Pay close attention to accurately capturing all text elements.
 
 Formatting: Wrap the entire transcription in <raw_german></raw_german> tags.
 
+Caution: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
+
 Separator: When you are done with Step 1, print the separator line:
 
 --------------------------------------------------------------------
@@ -56,7 +58,7 @@ Review: Look at the image and your transcription from Step 1.
 
 Verification: Ensure you haven't missed any parts; if you did, transcribe and include them now.
 
-Line Breaks: Stay faithful to the line breaks (\n) you recorded in Step 1.
+Caution: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
 
 Categorization:
 

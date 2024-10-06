@@ -31,31 +31,6 @@ def add_bottom_border(paragraph, border_size='1', border_color='auto', border_sp
     bottom_border.set(qn('w:color'), border_color)
     borders.append(bottom_border)
 
-from docx import Document
-from docx.shared import Pt, RGBColor
-from docx.enum.style import WD_STYLE_TYPE
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
-import re
-
-def add_bottom_border(paragraph, border_size='1', border_color='auto', border_space='1', border_val='single'):
-    """
-    Adds a bottom border to a paragraph by modifying its XML properties.
-    """
-    p = paragraph._p  # Get the XML element of the paragraph
-    pPr = p.get_or_add_pPr()
-    borders = pPr.find(qn('w:pBdr'))
-    if borders is None:
-        borders = OxmlElement('w:pBdr')
-        pPr.append(borders)
-    bottom_border = OxmlElement('w:bottom')
-    bottom_border.set(qn('w:val'), border_val)
-    bottom_border.set(qn('w:sz'), border_size)
-    bottom_border.set(qn('w:space'), border_space)
-    bottom_border.set(qn('w:color'), border_color)
-    borders.append(bottom_border)
-
 def save_document(english_texts: dict, folder_name: str = '', language: str = 'English') -> None:
     """
     Creates a .docx document from a dictionary of texts, adds a header and footer with dynamic page numbers,
