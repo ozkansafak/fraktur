@@ -1,3 +1,5 @@
+import logging
+
 import time 
 from PIL import Image
 from io import BytesIO
@@ -24,7 +26,7 @@ def timeit(func):
         result = func(*args, **kwargs)
         end = time.time()
         delta = end - start
-        print(f"{func.__name__} runtime: {delta:.2f} sec")
+        logging.info(f"{func.__name__} runtime: {delta:.2f} sec")
     
         return result
     return wrapper

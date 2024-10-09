@@ -1,3 +1,5 @@
+import logging
+import tempfile
 import requests
 from PIL import Image
 import numpy as np 
@@ -114,87 +116,103 @@ Example Output Format:
 
 
 def send_gpt_request(base64_image, model_name, headers: dict) -> dict:
-    response = requests.post("https://api.openai.com/v1/chat/completions", 
-                             json=construct_payload(base64_image, model_name), 
-                             headers=headers)
+    try:
+        response = requests.post(
+            "https://api.openai.com/v1/chat/completions", 
+            json=construct_payload(base64_image, model_name), 
+            headers=headers)
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        logging.error(f"OpenAI API request failed: {e}")
+        return {'error': str(e)}
 
-    return response.json()
 
+def single_page(fname, model_name, headers, plotter, pageno, output_dir='figures_flask'):
+    try:
+        # Load image
+        image = convert_from_path(fname)[0]
+        arr = np.array(image)
+    
+        # Compute log spectrum along the y-axis.
+        log_spectrum_y = compute_log_spectrum_1d(arr, axis=0, plotter=plotter)
+    
+        # Get the bounding box pixel coordinates in x-axis.
+        x_lo, x_hi = extract_image_bbox(log_spectrum_y, axis_name='y', plotter=plotter)
 
-def single_page(fname, model_name, headers, plotter, pageno):
-    # Load image
-    image = convert_from_path(fname)[0]
-    arr = np.array(image)
+        # Compute log spectrum along the X-axis
+        log_spectrum_x = compute_log_spectrum_1d(arr[:, x_lo:x_hi], axis=1, plotter=plotter)
     
-    # Compute log spectrum along the y-axis.
-    log_spectrum_y = compute_log_spectrum_1d(arr, axis=0, plotter=plotter)
-    
-    # Get the bounding box pixel coordinates in x-axis.
-    x_lo, x_hi = extract_image_bbox(log_spectrum_y, axis_name='y', plotter=plotter)
+        # Get the bounding box pixel coordinates in y-axis.
+        y_lo, y_hi = extract_image_bbox(log_spectrum_x, axis_name='x', plotter=plotter)
+        
+        # Get cropped image
+        cropped_image = Image.fromarray(arr[y_lo:y_hi, x_lo:x_hi])
 
-    # Compute log spectrum along the X-axis
-    log_spectrum_x = compute_log_spectrum_1d(arr[:, x_lo:x_hi], axis=1, plotter=plotter)
+        # Save original image, and cropped image
+        save_images(y_lo, y_hi, x_lo, x_hi, arr, pageno, output_dir=output_dir)
+        
+        # convert to base64 to upload to OpenAI API
+        base64_image = encode_image(cropped_image)
     
-    # G et the bounding box pixel coordinates.
-    y_lo, y_hi = extract_image_bbox(log_spectrum_x, axis_name='x', plotter=plotter)
-    
-    # Get cropped image
-    cropped_image = Image.fromarray(arr[y_lo:y_hi, x_lo:x_hi])
+        # Send API request
+        response_dict = send_gpt_request(base64_image, model_name, headers)
 
-    # Save the original and cropped image
-    save_images(y_lo, y_hi, x_lo, x_hi, arr, pageno)
-    
-    # convert to base64 to upload to OpenAI API
-    base64_image = encode_image(cropped_image)
-    
-    response_dict = send_gpt_request(base64_image, model_name, headers)
+        if 'error' in response_dict:
+            logging.error(f"Error from GPT API: {response_dict['error']}")
+            return '', '', '', ''
 
-    content = response_dict['choices'][0]['message']['content']
+        content = response_dict.get('choices', [{}])[0].get('message', {}).get('content', '')
     
-    # Replace repeated newline chars with a single one. '\n\n\n' -> '\n'
-    content = re.sub(r'\n+', '\n', content)
-    import ipdb
+        if not content:
+            logging.error('No content received from GPT response.')
+            return '', '', '', ''
+        
+        # Replace repeated newline chars with a single one. '\n\n\n' -> '\n'
+        content = re.sub(r'\n+', '\n', content)
     
-    # Extract raw German OCR'ed text.
-    match = re.search(r'<raw_german>(.*?)</raw_german>', content, re.DOTALL)
-    if match is None:
-        # todo: Use logger here.
-        print(r'"<raw_german>(.*?)</raw_german>" was not found')
-        ipdb.set_trace()
-    else:
-        raw_german_text = match.group(1)
+        # Extract raw German OCR'ed text.
+        match = re.search(r'<raw_german>(.*?)</raw_german>', content, re.DOTALL)
+        if match is None:
+            logging.warning(r'"<raw_german>(.*?)</raw_german>" was not found')
+            raw_german_text = ''
+        else:
+            raw_german_text = match.group(1)
     
-    # Extract german tags
-    match = re.search(r'<german>(.*?)</german>', content, re.DOTALL)
-    if match is None:
-        # todo: Use logger here.
-        print(r'"<german>(.*?)</german>" was not found')
-        ipdb.set_trace()
-    else:
-        german_text = match.group(1)
-    
-    # Extract english tags
-    match = re.search(r'<english>(.*?)</english>', content, re.DOTALL)
-    if match is None:
-        # todo: Use logger here.
-        print(r'"<english>(.*?)</english>" was not found')
-        ipdb.set_trace()
-    else:
-        english_text = match.group(1)
-    
-    if plotter:
-        # Plot the images with size proportional to their pixel count.
-        height, width, _ = np.array(image).shape
-        plt.figure(figsize=(width/300, height/300))
-        plt.imshow(image); 
-        plt.gca().axis('off')
-        plt.show()
+        # Extract structured German text
+        match = re.search(r'<german>(.*?)</german>', content, re.DOTALL)
+        if match is None:
+            logging.warning(r'"<german>(.*?)</german>" was not found in the response.')
+            german_text = ''
+        else:
+            german_text = match.group(1)
 
-        plt.figure()
-        height, width, _ = np.array(cropped_image).shape
-        plt.figure(figsize=(width/300, height/300))
-        plt.imshow(cropped_image); 
-        plt.gca().axis('off')
-        plt.show()
+        # Extract english translation
+        match = re.search(r'<english>(.*?)</english>', content, re.DOTALL)
+        if match is None:
+            logging.warning(r'"<english>(.*?)</english>" was not found in the response.')
+            english_text = ''
+        else:
+            english_text = match.group(1)
 
-    return content, raw_german_text, german_text, english_text
+        if plotter:
+            # Plot the images with size proportional to their pixel count.
+            height, width, _ = np.array(image).shape
+            plt.figure(figsize=(width/300, height/300))
+            plt.imshow(image); 
+            plt.gca().axis('off')
+            plt.show()
+
+            plt.figure()
+            height, width, _ = np.array(cropped_image).shape
+            plt.figure(figsize=(width/300, height/300))
+            plt.imshow(cropped_image); 
+            plt.gca().axis('off')
+            plt.show()
+
+        return content, raw_german_text, german_text, english_text
+
+    except Exception as e:
+        logging.exception(f"Exception occurred while processing page {pageno}: {e}")
+        return '', '', '', ''
+    
+

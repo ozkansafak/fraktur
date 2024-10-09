@@ -46,8 +46,8 @@ The English text is converted into a .docx file which can later be converted int
   <img src="output/readme figures/FFT-x form.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
   <img src="output/readme figures/FFT-y form.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
 
-  <p>Fig 3. (a) the mean log-energy spectrum in x-dir, (mean operation applied in y-dir)  <br>
-  (b) the mean log-energy spectrum in y-dir, (mean operation applied in x-dir)</p>
+  <p>Fig 3. (a)  mean log-energy spectrum in x-dir, (mean operation applied in y-dir).  <br>
+  (b)  mean log-energy spectrum in y-dir, (mean operation applied in x-dir).</p>
 </div>
 
 
@@ -62,13 +62,14 @@ The English text is converted into a .docx file which can later be converted int
   <img src="output/readme figures/German 456.png" alt="Cropped Image" style="height: 300px; object-fit: contain;">
   <img src="output/readme figures/English 456.png" alt="Cropped Image" style="height: 300px; object-fit: contain;">
 
-  <p>Fig 5. (a) German Transcription of original Fraktur document<br>
-    (b) English Translation of the German transcription</p>
+  <p>Fig 5. (a) German Transcription of input Fraktur document<br>
+    (b) English Translation of the OCR'ed transcription</p>
 </div>
 
 
 **Modules Used:** <br>
->numpy<br>
+>Flask<br>
+numpy<br>
 Pillow<br>
 matplotlib<br>
 requests<br>

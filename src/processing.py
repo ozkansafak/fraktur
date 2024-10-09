@@ -1,3 +1,7 @@
+import matplotlib
+matplotlib.use('Agg')  # Use 'Agg' backend for non-GUI rendering
+
+import logging
 from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
@@ -46,7 +50,8 @@ def compute_log_spectrum_1d(arr: np.ndarray, axis: int, plotter: bool = False) -
         plt.xlabel(f'{axis_name}-axis')
         plt.ylabel(f'Frequency ({axis_name}-axis)')
         plt.gca().axis('off')
-        plt.show()
+        plt.savefig(f'log_spectrum_{axis_name}.png')
+        plt.close()
 
     return log_spectrum
 
@@ -72,14 +77,15 @@ def extract_image_bbox(log_spectrum: np.ndarray, axis_name: str = 'y', plotter: 
         if lo is None and form[i] > 0 and all(form[i:i+5] > 0):
             lo = max(0, i-pad)
             if plotter:
-                print('lo:', lo)
+                logging.debug(f'lo: {lo}')
+
             break
 
     for i in range(n-1, -1, -1):
         if hi is None and form[i] > 0 and all(form[i-4:i+1] > 0):
             hi = min(i+pad, len(form)-1)
             if plotter:
-                print('hi:', hi)
+                logging.debug('hi:', hi)
             break
 
     if plotter:
@@ -90,11 +96,12 @@ def extract_image_bbox(log_spectrum: np.ndarray, axis_name: str = 'y', plotter: 
         plt.title(f"FFT-{axis_name}")
         plt.xlabel(f' {s}-axis')
         plt.xlim(0, len(form)-1)
-        plt.show()
+        plt.savefig(f'fft_{axis_name}.png')
+        plt.close()
         
     return lo, hi + 1
 
-def save_images(y_lo: int, y_hi: int, x_lo: int, x_hi: int, arr: np.ndarray, pageno: int) -> None:
+def save_images(y_lo: int, y_hi: int, x_lo: int, x_hi: int, arr: np.ndarray, pageno: int, output_dir='') -> None:
     """
     Saves the original and cropped images for the input numpy array representation of an Image.
 
@@ -113,13 +120,13 @@ def save_images(y_lo: int, y_hi: int, x_lo: int, x_hi: int, arr: np.ndarray, pag
     image = Image.fromarray(arr[y_lo:y_hi, x_lo:x_hi])
     plt.imshow(image)
     plt.gca().axis('off')
-    plt.savefig(f'../figures/{pageno}_cropped.png', bbox_inches='tight')
+    plt.savefig(f'figures_flask/{pageno}_cropped.png', bbox_inches='tight')
 
     plt.imshow(image)
     plt.gca().axis('off')
     image = Image.fromarray(arr)
     plt.imshow(image)
     plt.gca().axis('off')
-    plt.savefig(f'../figures/{pageno}.png', bbox_inches='tight')
+    plt.savefig(f'figures_flask/{pageno}.png', bbox_inches='tight')
     plt.close(fig)
 
