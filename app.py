@@ -14,7 +14,7 @@ from src.utils import encode_image
 from src.api_requests import single_page
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
@@ -58,8 +58,8 @@ def upload_file():
             file.save(filepath)
 
             # Process the uploaded PDF page
-            pageno = 'uploaded_page'  # You can generate a unique identifier if needed
-            logging.info(f'Start processing file: {filepath}')
+            pageno = re.search(r'page_(.*?)\.pdf', filename, re.DOTALL).group(1)
+            logging.info(f'Start processing file: {filepath}, pageno: {pageno}')
             start_time = time.time()
             content, raw_german_text, german_text, english_text = single_page(
                 filepath, model_name, headers, plotter=False, pageno=pageno, output_dir=app.config['UPLOAD_FOLDER']
