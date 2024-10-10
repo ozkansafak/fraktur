@@ -11,3 +11,13 @@ figures/**
 **/.ipynb_checkpoints
 **/data/Der Weltkrieg v8 Chap 4F (in Fraktur)
 *.ipynb
+*.env
+
+# Ignore Python bytecode
+__pycache__/
+*.pyc
+
+# Ignore uploads and cropped images
+**/data/uploads/
+data/cropped/
+

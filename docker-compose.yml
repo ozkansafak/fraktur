@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  # Storage Service using MinIO
+  storage-service:
+    image: minio/minio:latest
+    container_name: storage-service
+    ports:
+      - "9000:9000"  # MinIO API
+      - "9001:9001"  # MinIO Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=${FRONTEND_SECRET_KEY}
+      - PDF_PROCESSING_URL=http://pdf-processing:5001/process
+      - OCR_TRANSLATION_URL=http://ocr-and-translation:5002/ocr-translate
+      - DOCUMENT_GENERATION_URL=http://document-generation:5003/generate
+      - STORAGE_SERVICE_URL=http://storage-service:9000  # Using MinIO's API endpoint
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    depends_on:
+      storage-service:
+        condition: service_healthy
+      pdf-processing:
+        condition: service_started
+      ocr-and-translation:
+        condition: service_started
+      document-generation:
+        condition: service_started
+
+  # PDF Processing Service
+  pdf-processing:
+    build:
+      context: ./pdf-processing
+      dockerfile: Dockerfile
+    container_name: pdf-processing
+    ports:
+      - "5001:5001"
+    environment:
+      - SECRET_KEY=${PDF_PROCESSING_SECRET_KEY}
+      - STORAGE_SERVICE_URL=http://storage-service:9000  # Using MinIO's API endpoint
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    depends_on:
+      storage-service:
+        condition: service_healthy
+
+  # OCR and Translation Service
+  ocr-and-translation:
+    build:
+      context: ./ocr-and-translation
+      dockerfile: Dockerfile
+    container_name: ocr-and-translation
+    ports:
+      - "5002:5002"
+    environment:
+      - SECRET_KEY=${OCR_TRANSLATION_SECRET_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GPT_MODEL=${GPT_MODEL}
+      - STORAGE_SERVICE_URL=http://storage-service:9000  # Using MinIO's API endpoint
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    depends_on:
+      storage-service:
+        condition: service_healthy
+
+  # Document Generation Service
+  document-generation:
+    build:
+      context: ./document-generation
+      dockerfile: Dockerfile
+    container_name: document-generation
+    ports:
+      - "5003:5003"
+    environment:
+      - SECRET_KEY=${DOCUMENT_GENERATION_SECRET_KEY}
+      - STORAGE_SERVICE_URL=http://storage-service:9000  # Using MinIO's API endpoint
+      - DOCUMENT_STORAGE_PATH=documents/
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    depends_on:
+      storage-service:
+        condition: service_healthy
+
+volumes:
+  minio_data:
