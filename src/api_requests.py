@@ -106,7 +106,7 @@ Example Output Format:
             ]
           }
         ],
-        "max_tokens": 3000,
+        "max_tokens": 6000,
         "temperature": 0.1
     }
     
