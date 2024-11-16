@@ -1,3 +1,7 @@
+import aiohttp
+import asyncio
+from typing import Dict, Tuple, List
+import time
 import requests
 from PIL import Image
 import numpy as np 
@@ -6,7 +10,6 @@ from src.processing import save_images, extract_image_bbox, compute_log_spectrum
 from src.utils import encode_image
 from pdf2image import convert_from_path
 import matplotlib.pyplot as plt
-
 from src.utils import pylab
 
 
@@ -43,7 +46,7 @@ You are to perform three steps on the provided image of a document.
 
 Task: Transcribe the entire text from the image into German, including all Fraktur characters.
 
-Attention: Pay close attention to accurately capturing all text elements.
+Attention: Pay close attention to accurately capturing all text elements in correct order.
 
 Attention 2: Make sure you're reading each line only once. 
 
@@ -56,11 +59,13 @@ Separator: When you are done with Step 1, print the separator line:
 --------------------------------------------------------------------
 **Step 2: Header-Body-Footer Analysis**
 
-Review: Look at the image and your transcription from Step 1.
+Review: Examine and compare the image and your transcription from Step 1 together.
 
 Verification: Ensure you haven't missed any parts; if you did, transcribe and include them now.
 
-Caution: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
+Verification: Examine closely to identify any errors in character repetition, order, or counting. If any are found, please correct them.
+
+Caution: Pay attention to identify the paragraphs as a whole and not make sure to not erroneously place a carriage return at the end of each line.
 
 Categorization:
 
@@ -113,16 +118,20 @@ Example Output Format:
     return payload
 
 
-def send_gpt_request(base64_image, model_name, headers: dict) -> dict:
-    response = requests.post("https://api.openai.com/v1/chat/completions", 
-                             json=construct_payload(base64_image, model_name), 
-                             headers=headers)
+async def send_gpt_request_async(base64_image: str, model_name: str, headers: dict) -> dict:
+    """Asynchronous version of send_gpt_request"""
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://api.openai.com/v1/chat/completions",
+            json=construct_payload(base64_image, model_name),
+            headers=headers
+        ) as response:
+            return await response.json()
 
-    return response.json()
 
-
-def single_page(fname, model_name, headers, plotter, pageno):
-    # Load image
+async def process_single_page(fname: str, model_name: str, headers: dict, plotter: bool, pageno: str) -> Tuple[str, str, str, str]:
+    """Asynchronous version of single_page"""
+    # Load and process image (this is CPU-bound, keep it synchronous)
     image = convert_from_path(fname)[0]
     arr = np.array(image)
     
@@ -147,41 +156,16 @@ def single_page(fname, model_name, headers, plotter, pageno):
     # convert to base64 to upload to OpenAI API
     base64_image = encode_image(cropped_image)
     
-    response_dict = send_gpt_request(base64_image, model_name, headers)
+    response_dict = await send_gpt_request_async(base64_image, model_name, headers)
 
     content = response_dict['choices'][0]['message']['content']
+    content = re.sub(r'\n+', '\n', content)  # '\n\n\n' -> '\n'
     
-    # Replace repeated newline chars with a single one. '\n\n\n' -> '\n'
-    content = re.sub(r'\n+', '\n', content)
-    import ipdb
-    
-    # Extract raw German OCR'ed text.
-    match = re.search(r'<raw_german>(.*?)</raw_german>', content, re.DOTALL)
-    if match is None:
-        # todo: Use logger here.
-        print(r'"<raw_german>(.*?)</raw_german>" was not found')
-        ipdb.set_trace()
-    else:
-        raw_german_text = match.group(1)
-    
-    # Extract german tags
-    match = re.search(r'<german>(.*?)</german>', content, re.DOTALL)
-    if match is None:
-        # todo: Use logger here.
-        print(r'"<german>(.*?)</german>" was not found')
-        ipdb.set_trace()
-    else:
-        german_text = match.group(1)
-    
-    # Extract english tags
-    match = re.search(r'<english>(.*?)</english>', content, re.DOTALL)
-    if match is None:
-        # todo: Use logger here.
-        print(r'"<english>(.*?)</english>" was not found')
-        ipdb.set_trace()
-    else:
-        english_text = match.group(1)
-    
+    # Extract text sections (moved to separate function for clarity)
+    raw_german_text = extract_text_section(content, 'raw_german')
+    german_text = extract_text_section(content, 'german')
+    english_text = extract_text_section(content, 'english')
+        
     if plotter:
         # Plot the images with size proportional to their pixel count.
         height, width, _ = np.array(image).shape
@@ -198,3 +182,11 @@ def single_page(fname, model_name, headers, plotter, pageno):
         plt.show()
 
     return content, raw_german_text, german_text, english_text
+
+def extract_text_section(content: str, section: str) -> str:
+    """Helper function to extract text sections with error handling"""
+    match = re.search(f'<{section}>(.*?)</{section}>', content, re.DOTALL)
+    if match is None:
+        print(f'"{section}" section was not found')
+        return ""
+    return match.group(1)
