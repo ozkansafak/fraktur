@@ -46,7 +46,7 @@ You are to perform three steps on the provided image of a document.
 
 Task: Transcribe the entire text from the image into German, including all Fraktur characters.
 
-Attention: Pay close attention to accurately capturing all text elements in correct order.
+Attention: Pay close attention to accurately capturing all text elements.
 
 Attention 2: Make sure you're reading each line only once. 
 
@@ -59,13 +59,11 @@ Separator: When you are done with Step 1, print the separator line:
 --------------------------------------------------------------------
 **Step 2: Header-Body-Footer Analysis**
 
-Review: Examine and compare the image and your transcription from Step 1 together.
+Review: Look at the image and your transcription from Step 1.
 
 Verification: Ensure you haven't missed any parts; if you did, transcribe and include them now.
 
-Verification: Examine closely to identify any errors in character repetition, order, or counting. If any are found, please correct them.
-
-Caution: Pay attention to identify the paragraphs as a whole and not make sure to not erroneously place a carriage return at the end of each line.
+Caution: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
 
 Categorization:
 

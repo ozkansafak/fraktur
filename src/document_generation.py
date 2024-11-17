@@ -6,127 +6,163 @@ from docx.oxml import OxmlElement
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.shared import Inches
 import re
+import os
+import logging
+from dataclasses import dataclass
+from typing import Tuple, Dict, Any, Optional
+from datetime import datetime
+
+logger = logging.getLogger('logger_name')
+logger.setLevel(logging.INFO)
+
+def strip_newlines(text: str) -> str:
+    """Clean text by removing newlines adjacent to section tags."""
+    # Remove \n before and after section tags
+    text = re.sub(r'\n*<(body|header|footer)>', r'<\1>', text)
+    text = re.sub(r'</(body|header|footer)>\n*', r'</\1>', text)
+    
+    return text
 
 
-def add_bottom_border(paragraph, border_size='1', border_color='auto', border_space='1', border_val='single'):
+def setup_logger(name: str) -> logging.Logger:
+    """Setup a simple logger that only outputs to stdout."""
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    
+    if not logger.handlers:
+        # Create console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        
+        # Create formatter
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        console_handler.setFormatter(formatter)
+        
+        # Add handler to logger
+        logger.addHandler(console_handler)
+    
+    return logger
+
+def extract_sections_in_order(text: str) -> list:
     """
-    Adds a bottom border to a paragraph by modifying its XML properties.
-
+    Extracts sections in the order they appear in the text.
+    
     Args:
-        paragraph: The paragraph to which the border will be added.
-        border_size: The size (thickness) of the border in eighths of a point.
-        border_color: The color of the border (e.g., 'auto' for automatic/black).
-        border_space: The space between the border and the text.
-        border_val: The style of the border (e.g., 'single', 'double', 'dashed').
+        text (str): Text containing header, body, and footer tags
+        
+    Returns:
+        list: List of tuples (section_type, section_content) in order of appearance
     """
-    p = paragraph._p  # Get the XML element of the paragraph
+    # Pattern to match any section
+    pattern = r'<(header|body|footer)>(.*?)</\1>'
+    
+    # Find all sections in order of appearance
+    sections = []
+    for match in re.finditer(pattern, text, re.DOTALL):
+        section_type = match.group(1)
+        content = match.group(2)
+        sections.append((section_type, content))
+    
+    return sections
+
+def add_bottom_border(paragraph: Any) -> None:
+    """Adds a bottom border to a paragraph."""
+    p = paragraph._p
     pPr = p.get_or_add_pPr()
     borders = pPr.find(qn('w:pBdr'))
     if borders is None:
         borders = OxmlElement('w:pBdr')
         pPr.append(borders)
     bottom_border = OxmlElement('w:bottom')
-    bottom_border.set(qn('w:val'), border_val)
-    bottom_border.set(qn('w:sz'), border_size)
-    bottom_border.set(qn('w:space'), border_space)
-    bottom_border.set(qn('w:color'), border_color)
+    bottom_border.set(qn('w:val'), 'single')
+    bottom_border.set(qn('w:sz'), '2')
+    bottom_border.set(qn('w:space'), '1')
+    bottom_border.set(qn('w:color'), 'auto')
     borders.append(bottom_border)
 
-def save_document(english_texts: dict, folder_name: str = '', language: str = 'English') -> None:
-    """
-    Creates a .docx document from a dictionary of texts, adds a header and footer with dynamic page numbers,
-    and inserts a horizontal line between the body and the footer.
-    """
-    document = Document()
-
+def setup_document_styles(document: Document) -> Dict[str, Any]:
+    """Sets up document styles and returns them."""
     styles = document.styles
+
+    # Header style
     if 'CustomHeaderStyle' not in styles:
-        custom_style = styles.add_style('CustomHeaderStyle', WD_STYLE_TYPE.PARAGRAPH)
-        custom_style.font.name = 'Arial'
-        custom_style.font.size = Pt(10)
-        custom_style.font.color.rgb = RGBColor(0, 0, 0)
-        custom_style.font.bold = False
-        custom_style.font.italic = False
-    else:
-        custom_style = styles['CustomHeaderStyle']
+        header_style = styles.add_style('CustomHeaderStyle', WD_STYLE_TYPE.PARAGRAPH)
+        header_style.font.name = 'Arial'
+        header_style.font.size = Pt(14)
+        header_style.font.color.rgb = RGBColor(0, 0, 0)
 
-    # Add and customize the header and footer
-    section = document.sections[0]
-
-    # Set the left and right margins
-    section.left_margin = Inches(1)  # 1 inch left margin
-    section.right_margin = Inches(1)  # 1 inch right margin
-
-
-    # Configure Header
-    header = section.header
-    header_paragraph = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
-    header_paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # Center alignment
-    header_paragraph.clear()
-
-    # Configure Footer 
-    footer = section.footer
-    footer_paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-    footer_paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER  # Center alignment
-
-    # Create a footnote style
-    styles = document.styles
+    # Footnote style
     if 'FootnoteStyle' not in styles:
         footnote_style = styles.add_style('FootnoteStyle', WD_STYLE_TYPE.PARAGRAPH)
-        footnote_style.font.size = Pt(9)  # Footnote font size
-    else:
-        footnote_style = styles['FootnoteStyle']
+        footnote_style.font.size = Pt(9)
+
+    return {
+        'header': styles['CustomHeaderStyle'],
+        'footnote': styles['FootnoteStyle']
+    }
+
+def save_document(texts: dict, folder_name: str = '', 
+                  language: str = 'English') -> Tuple[Document, str]:
+    """
+    Creates a .docx document maintaining the original section order.
+    """
+    logger = setup_logger('ocr_processor')
+
+    document = Document()
+    styles = setup_document_styles(document)
+
+    # Configure document margins
+    section = document.sections[0]
+    section.left_margin = Inches(1)
+    section.right_margin = Inches(1)
+
+    # Process each page
+    for index, pageno in enumerate(sorted(texts.keys())):
+        text = re.sub(r'\n+', '\n', texts[pageno])
         
-    for index, pageno in enumerate(sorted(english_texts.keys())):
-        text = english_texts[pageno]
-        text = re.sub(r'\n+', '\n', text)
-    
-        # Insert a page break before each new page except the first
+        text = strip_newlines(text)
+        
+        # Add page break for all pages except the first
         if index > 0:
             document.add_page_break()
 
-        # Extract header
-        header_match = re.search(r'<header>(.*?)</header>', text, re.DOTALL)
-        if header_match is None:
-            header_text = ""
-        else:
-            header_text = header_match.group(1)
-        header_text = f"Page {pageno}\n{header_text}"
+        # Get sections in their original order
+        sections = extract_sections_in_order(text)
 
-        # Add header text as a heading in the body
-        header_paragraph = document.add_heading(header_text)
-        header_paragraph.style = custom_style
+        # add page number
+        logger.info(f"Page {pageno}")
+        header_para = document.add_paragraph(f"Page {pageno}\n")
+        header_para.style = styles['header']
+        header_para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
 
-        for run in header_paragraph.runs:
-            run.font.size = Pt(14)
-            run.font.color.rgb = RGBColor(0, 0, 0)
-        
-        # Add a bottom border after the header
-        hr_paragraph = document.add_paragraph()
-        add_bottom_border(hr_paragraph, border_size='2', border_color='auto', border_space='1', border_val='single')
+        for section_type, content in sections:
+            logger.info(f'section_type: {section_type}')
+            
+            if section_type == 'header':
+                # Add page number to header content
+                header_para = document.add_paragraph(content)
+                header_para.style = styles['header']
+                header_para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
 
-        # Extract body
-        body_match = re.search(r'<body>(.*?)</body>', text, re.DOTALL)
-        if body_match:
-            body = body_match.group(1)
-            for paragraph in body.split('\n'):
-                paragraph = document.add_paragraph(paragraph)
-                paragraph.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
+            elif section_type == 'body':
+                # Add body paragraphs
+                for para_text in content.split('\n'):
+                    if para_text.strip():
+                        body_para = document.add_paragraph(para_text)
+                        body_para.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
 
-        
-        # Extract footnotes
-        footer_match = re.search(r'<footer>(.*?)</footer>', text, re.DOTALL)
-        if footer_match is not None:
-            footer_text = footer_match.group(1)
-            # Add a horizontal line between body and footnotes
-            hr_paragraph = document.add_paragraph()
-            add_bottom_border(hr_paragraph, border_size='2', border_color='auto', border_space='1', border_val='single')
-            # Add footnotes with the footnote style
-            footnote_paragraph = document.add_paragraph(footer_text)
-            footnote_paragraph.style = footnote_style
-    
+            elif section_type == 'footer':
+                # Add border paragraph before footer
+                border_para = document.add_paragraph()
+                add_bottom_border(border_para)
+
+                # Add footer content
+                footer_para = document.add_paragraph(content)
+                footer_para.style = styles['footnote']
+                footer_para.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
+
     # Save the document
-    fname = f'../output/{folder_name}/{language}'
+    fname = f'../output_data/{folder_name}/{language}'
     document.save(f'{fname}.docx')
 
     return document, fname

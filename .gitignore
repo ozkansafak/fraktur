@@ -1,16 +1,15 @@
-.DS_Store*
+**/.DS_Store*
 .ipynb_checkpoints/**
 *.venv/**
 *.log
 *.out
 .vscode/**
-output/**
-!output/readme figures
+output_data/**
+!output_data/readme_figures
 figures/**
 **/__pycache__/**
 **/.ipynb_checkpoints
 **/input_data/Der Weltkrieg v8 Chap 4F (in Fraktur)
 *.ipynb
 **/.env
-
 

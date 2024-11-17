@@ -29,22 +29,22 @@ The English text is converted into a .docx file which can later be converted int
 
 **PIPELINE**
 <div align="center">
-  <img src="output/readme figures/456.png" alt="Original Image" style="height: 400px; object-fit: contain;">
+  <img src="output_data/readme_figures/456.png" alt="Original Image" style="height: 400px; object-fit: contain;">
   <p>Fig 1. Original image provided in pdf format.</p>
 </div>
 
 
 <div align="center">
-  <img src="output/readme figures/FFT-y heatmap.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
-  <img src="output/readme figures/FFT-x heatmap.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
+  <img src="output_data/readme_figures/FFT-y heatmap.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
+  <img src="output_data/readme_figures/FFT-x heatmap.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
   
   <p>Fig 2. (a) log energy spectrum of image in Y-dir. Notice, the right and left margins are evident from the picture and left and right boundaries of the text area are evident.<br>
   (b) log energy spectrum of partially cropped image in X-dir. </p>
 </div>
 
 <div align="center">
-  <img src="output/readme figures/FFT-x form.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
-  <img src="output/readme figures/FFT-y form.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
+  <img src="output_data/readme_figures/FFT-x form.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
+  <img src="output_data/readme_figures/FFT-y form.png" alt="FFT-x Form" style="height: 200px; object-fit: contain;">
 
   <p>Fig 3. (a) the mean log-energy spectrum in x-dir, (mean operation applied in y-dir)  <br>
   (b) the mean log-energy spectrum in y-dir, (mean operation applied in x-dir)</p>
@@ -52,15 +52,15 @@ The English text is converted into a .docx file which can later be converted int
 
 
 <div align="center">
-  <img src="output/readme figures/456_cropped.png" alt="Cropped Image" style="height: 260px; object-fit: contain;">
+  <img src="output_data/readme_figures/456_cropped.png" alt="Cropped Image" style="height: 260px; object-fit: contain;">
 
   <p>Fig 4.  Output: the cropped image</p>
 </div>
 <br>
 
 <div align="center">
-  <img src="output/readme figures/German 456.png" alt="Cropped Image" style="height: 300px; object-fit: contain;">
-  <img src="output/readme figures/English 456.png" alt="Cropped Image" style="height: 300px; object-fit: contain;">
+  <img src="output_data/readme_figures/German 456.png" alt="Cropped Image" style="height: 300px; object-fit: contain;">
+  <img src="output_data/readme_figures/English 456.png" alt="Cropped Image" style="height: 300px; object-fit: contain;">
 
   <p>Fig 5. (a) German Transcription of original Fraktur document<br>
     (b) English Translation of the German transcription</p>
@@ -76,3 +76,5 @@ pdf2image<br>
 openai<br>
 python-docx<br>
 ipdb<br>
+asyncio<br>
+aiohttp<br>
