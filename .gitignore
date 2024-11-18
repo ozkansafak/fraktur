@@ -5,6 +5,7 @@
 *.out
 .vscode/**
 output_data/**
+input_data/**
 !output_data/readme_figures
 figures/**
 **/__pycache__/**

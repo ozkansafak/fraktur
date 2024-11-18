@@ -3,6 +3,7 @@ import asyncio
 from typing import Dict, Tuple, List
 import time
 import requests
+import logging
 from PIL import Image
 import numpy as np 
 import re
@@ -12,6 +13,10 @@ from pdf2image import convert_from_path
 import matplotlib.pyplot as plt
 from src.utils import pylab
 
+from src.document_generation import setup_logger
+
+logger = logging.getLogger('logger_name')
+logger.setLevel(logging.INFO)
 
 def construct_payload(base64_image: str, model_name: str = "gpt-4o-mini-2024-07-18") -> dict:
     """
@@ -183,8 +188,11 @@ async def process_single_page(fname: str, model_name: str, headers: dict, plotte
 
 def extract_text_section(content: str, section: str) -> str:
     """Helper function to extract text sections with error handling"""
+    
+    logger = setup_logger('extract_text_section')
+    
     match = re.search(f'<{section}>(.*?)</{section}>', content, re.DOTALL)
     if match is None:
-        print(f'"{section}" section was not found')
+        logger.info(f'"{section}" section was not found')
         return ""
     return match.group(1)

@@ -6,22 +6,13 @@ from docx.oxml import OxmlElement
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.shared import Inches
 import re
-import os
-import logging
 from dataclasses import dataclass
 from typing import Tuple, Dict, Any, Optional
 from datetime import datetime
+import logging
 
 logger = logging.getLogger('logger_name')
 logger.setLevel(logging.INFO)
-
-def strip_newlines(text: str) -> str:
-    """Clean text by removing newlines adjacent to section tags."""
-    # Remove \n before and after section tags
-    text = re.sub(r'\n*<(body|header|footer)>', r'<\1>', text)
-    text = re.sub(r'</(body|header|footer)>\n*', r'</\1>', text)
-    
-    return text
 
 
 def setup_logger(name: str) -> logging.Logger:
@@ -42,6 +33,14 @@ def setup_logger(name: str) -> logging.Logger:
         logger.addHandler(console_handler)
     
     return logger
+
+def strip_newlines(text: str) -> str:
+    """Clean text by removing newlines adjacent to section tags."""
+    # Remove \n before and after section tags
+    text = re.sub(r'\n*<(body|header|footer)>', r'<\1>', text)
+    text = re.sub(r'</(body|header|footer)>\n*', r'</\1>', text)
+    
+    return text
 
 def extract_sections_in_order(text: str) -> list:
     """
