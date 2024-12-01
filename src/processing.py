@@ -50,7 +50,9 @@ def compute_log_spectrum_1d(arr: np.ndarray, axis: int, plotter: bool = False) -
 
     return log_spectrum
 
-def extract_image_bbox(log_spectrum: np.ndarray, axis_name: str = 'y', plotter: bool = False) -> tuple:
+def extract_image_bbox(log_spectrum: np.ndarray, 
+                       axis_name: str = 'y', 
+                       plotter: bool = False) -> tuple:
     """
     Extracts the bounding box coordinates from a log spectrum.
 
@@ -65,9 +67,9 @@ def extract_image_bbox(log_spectrum: np.ndarray, axis_name: str = 'y', plotter: 
     axis = 0 if axis_name == 'y' else 1
     form = np.mean(log_spectrum, axis=axis) - np.mean(log_spectrum)
     n = len(form)
-
+    
     lo, hi = None, None
-    pad = 5
+    pad = 10
     for i in range(n):
         if lo is None and form[i] > 0 and all(form[i:i+5] > 0):
             lo = max(0, i-pad)
@@ -83,7 +85,7 @@ def extract_image_bbox(log_spectrum: np.ndarray, axis_name: str = 'y', plotter: 
             break
 
     if plotter:
-        s = {'X','Y'}.difference({axis_name}).pop() 
+        s = {'X','Y'}.difference({axis_name}).pop()
         plt.figure(figsize=(13, 2.2))
         plt.plot(form, 'k.-', alpha=.6)
         plt.plot(range(lo, hi+1), form[lo:hi+1], 'r.', alpha=1)

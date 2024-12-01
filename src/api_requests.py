@@ -132,23 +132,27 @@ async def send_gpt_request_async(base64_image: str, model_name: str, headers: di
             return await response.json()
 
 
-async def process_single_page(fname: str, model_name: str, headers: dict, plotter: bool, pageno: str) -> Tuple[str, str, str, str]:
+async def process_single_page(fname: str, model_name: str, headers: dict, plotter: bool, pageno: str, extract: bool = True) -> Tuple[str, str, str, str]:
     """Asynchronous version of single_page"""
     # Load and process image (this is CPU-bound, keep it synchronous)
     image = convert_from_path(fname)[0]
     arr = np.array(image)
     
-    # Compute log spectrum along the y-axis.
-    log_spectrum_y = compute_log_spectrum_1d(arr, axis=0, plotter=plotter)
+    if extract:
+        # Compute log spectrum along the y-axis.
+        log_spectrum_y = compute_log_spectrum_1d(arr, axis=0, plotter=plotter)
     
-    # Get the bounding box pixel coordinates in x-axis.
-    x_lo, x_hi = extract_image_bbox(log_spectrum_y, axis_name='y', plotter=plotter)
+        # Get the bounding box pixel coordinates in x-axis.
+        x_lo, x_hi = extract_image_bbox(log_spectrum_y, axis_name='y', plotter=plotter)
 
-    # Compute log spectrum along the X-axis
-    log_spectrum_x = compute_log_spectrum_1d(arr[:, x_lo:x_hi], axis=1, plotter=plotter)
-    
-    # G et the bounding box pixel coordinates.
-    y_lo, y_hi = extract_image_bbox(log_spectrum_x, axis_name='x', plotter=plotter)
+        # Compute log spectrum along the X-axis
+        log_spectrum_x = compute_log_spectrum_1d(arr[:, x_lo:x_hi], axis=1, plotter=plotter)
+        
+        # Get the bounding box pixel coordinates.
+        y_lo, y_hi = extract_image_bbox(log_spectrum_x, axis_name='x', plotter=plotter)
+    else:
+        x_lo, x_hi = 0, len(arr[0])
+        y_lo, y_hi = 0, len(arr)
     
     # Get cropped image
     cropped_image = Image.fromarray(arr[y_lo:y_hi, x_lo:x_hi])
@@ -165,9 +169,9 @@ async def process_single_page(fname: str, model_name: str, headers: dict, plotte
     content = re.sub(r'\n+', '\n', content)  # '\n\n\n' -> '\n'
     
     # Extract text sections (moved to separate function for clarity)
-    raw_german_text = extract_text_section(content, 'raw_german')
-    german_text = extract_text_section(content, 'german')
-    english_text = extract_text_section(content, 'english')
+    raw_german_text = extract_text_section(pageno, content, 'raw_german')
+    german_text = extract_text_section(pageno, content, 'german')
+    english_text = extract_text_section(pageno, content, 'english')
         
     if plotter:
         # Plot the images with size proportional to their pixel count.
@@ -186,13 +190,13 @@ async def process_single_page(fname: str, model_name: str, headers: dict, plotte
 
     return content, raw_german_text, german_text, english_text
 
-def extract_text_section(content: str, section: str) -> str:
+def extract_text_section(pageno: str, content: str, section: str) -> str:
     """Helper function to extract text sections with error handling"""
     
     logger = setup_logger('extract_text_section')
     
     match = re.search(f'<{section}>(.*?)</{section}>', content, re.DOTALL)
     if match is None:
-        logger.info(f'"{section}" section was not found')
+        logger.info(f'Pageno: {pageno}, "{section}" section was not found')
         return ""
     return match.group(1)

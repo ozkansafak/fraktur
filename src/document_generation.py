@@ -6,10 +6,9 @@ from docx.oxml import OxmlElement
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.shared import Inches
 import re
+import logging
 from dataclasses import dataclass
 from typing import Tuple, Dict, Any, Optional
-from datetime import datetime
-import logging
 
 logger = logging.getLogger('logger_name')
 logger.setLevel(logging.INFO)

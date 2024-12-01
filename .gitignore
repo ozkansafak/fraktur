@@ -13,4 +13,4 @@ figures/**
 **/input_data/Der Weltkrieg v8 Chap 4F (in Fraktur)
 *.ipynb
 **/.env
-
+**/.aider*
