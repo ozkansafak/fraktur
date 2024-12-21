@@ -137,7 +137,7 @@ async def make_gpt_request(base64_image: str, model_name: str, headers: dict) ->
 
 async def make_claude_request(base64_image: str, model_name: str="claude-3-5-sonnet-20241022") -> dict:
     """
-    Make an asynchronous request to the Claude API.
+    Make an asynchronous request to the Anthropic API w/ built-in retries and error-handling.
     """
     logger = logging.getLogger('logger_name')
     
@@ -150,7 +150,11 @@ async def make_claude_request(base64_image: str, model_name: str="claude-3-5-son
     #     )
     
     logger.info(f"In make_claude_request, model_name: {model_name}")
-    async def _make_request():
+    max_retries = 5
+    base_delay = 1  # Starting delay in seconds
+    max_delay = 64  # Maximum delay between retries
+
+    async def _make_request(retry_count: int = 0):
         async with aiohttp.ClientSession() as session:
             # Construct payload first to validate it
             payload = construct_payload_for_claude(base64_image, model_name)

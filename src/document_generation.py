@@ -129,14 +129,11 @@ def save_document(texts: dict,
         sections = extract_sections_in_order(text)
 
         # add page number
-        logger.info(f"Page {pageno}")
         header_para = document.add_paragraph(f"Page {pageno}\n")
         header_para.style = styles['header']
         header_para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
 
         for section_type, content in sections:
-            #logger.info(f'section_type: {section_type}')
-            
             if section_type == 'header':
                 # Add page number to header content
                 header_para = document.add_paragraph(content)
