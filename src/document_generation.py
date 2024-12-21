@@ -99,7 +99,8 @@ def setup_document_styles(document: Document) -> Dict[str, Any]:
         'footnote': styles['FootnoteStyle']
     }
 
-def save_document(texts: dict, folder_name: str = '', 
+def save_document(texts: dict, 
+                  folder_name: str = '', 
                   language: str = 'English') -> Tuple[Document, str]:
     """
     Creates a .docx document maintaining the original section order.
@@ -134,7 +135,7 @@ def save_document(texts: dict, folder_name: str = '',
         header_para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
 
         for section_type, content in sections:
-            logger.info(f'section_type: {section_type}')
+            #logger.info(f'section_type: {section_type}')
             
             if section_type == 'header':
                 # Add page number to header content

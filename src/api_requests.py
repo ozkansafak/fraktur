@@ -120,12 +120,13 @@ Example Output Format:
         "max_tokens": 6000,
         "temperature": 0.1
     }
-    
     return payload
 
-
-async def make_gpt_request_async(base64_image: str, model_name: str, headers: dict) -> dict:
+async def make_gpt_request(base64_image: str, model_name: str, headers: dict) -> dict:
     """ Asynchronous version of send_gpt_request """
+
+    logger.info(f"In make_gpt_request, model_name: {model_name}")
+    
     async with aiohttp.ClientSession() as session:
         async with session.post(
             "https://api.openai.com/v1/chat/completions",
@@ -134,7 +135,7 @@ async def make_gpt_request_async(base64_image: str, model_name: str, headers: di
         ) as response:
             return await response.json()
 
-async def make_claude_request_async(base64_image: str, model_name: str="claude-3-5-sonnet-20241022") -> dict:
+async def make_claude_request(base64_image: str, model_name: str="claude-3-5-sonnet-20241022") -> dict:
     """
     Make an asynchronous request to the Claude API.
     """
@@ -148,30 +149,29 @@ async def make_claude_request_async(base64_image: str, model_name: str="claude-3
     #     max_time=300              # Maximum total time in seconds (5 minutes)
     #     )
     
+    logger.info(f"In make_claude_request, model_name: {model_name}")
     async def _make_request():
-        print("In make_claude_request_async")
         async with aiohttp.ClientSession() as session:
             # Construct payload first to validate it
             payload = construct_payload_for_claude(base64_image, model_name)
             
             # Explicit headers with string values
-            request_headers = {
+            headers = {
                 "x-api-key": str(os.getenv("ANTHROPIC_API_KEY")),
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json"
             }
             
-            # logger.debug(f"Making request with headers: {request_headers}")
+            # logger.debug(f"Making request with headers: {headers}")
             
             async with session.post(
                 "https://api.anthropic.com/v1/messages",
                 json=payload,
-                headers=request_headers
+                headers=headers
             ) as response:
                 if response.status == 429:
                     error_text = await response.text()
-                    logger.warning(f"Rate limit hit: {error_text}")
-                    # Wait for a minute before retrying
+                    logger.warning(f"Rate limit hit: {error_text}.. Wait for a minute before retrying")                    
                     await asyncio.sleep(60)
                     raise ValueError("Rate limit exceeded")
                 
@@ -279,7 +279,7 @@ Example Output Format:
                     ]
                 }
             ],
-            "max_tokens": 3000,
+            "max_tokens": 6000,
             "temperature": 0.1
         }
         
@@ -324,8 +324,10 @@ async def process_single_page(fname: str, model_name: str, headers: dict, plotte
     # convert to base64 to upload to OpenAI API
     base64_image = encode_image(cropped_image)
 
-    # response_dict = await make_gpt_request_async(base64_image, model_name, headers)
-    response_dict = await make_claude_request_async(base64_image)
+    if model_name.startswith('gpt'):
+        response_dict = await make_gpt_request(base64_image, model_name, headers)
+    else:
+        response_dict = await make_claude_request(base64_image, model_name)
 
     if 'content' in response_dict:
         # Anthropic model
