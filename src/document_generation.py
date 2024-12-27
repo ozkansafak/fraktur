@@ -155,7 +155,7 @@ def save_document(texts: dict,
                 # Add footer content
                 footer_para = document.add_paragraph(content)
                 footer_para.style = styles['footnote']
-                footer_para.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
+                footer_para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
 
     # Save the document
     fname = f'../output_data/{folder_name}/{language}'

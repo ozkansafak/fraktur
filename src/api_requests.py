@@ -20,7 +20,7 @@ from src.document_generation import setup_logger
 logger = logging.getLogger('logger_name')
 logger.setLevel(logging.INFO)
 
-def construct_payload(base64_image: str, model_name: str = "gpt-4o-mini-2024-07-18") -> dict:
+def construct_payload_for_gpt(base64_image: str, model_name: str = "gpt-4o-mini-2024-07-18") -> dict:
     """
     Constructs the payload for the GPT-4o model with a base64 encoded image.
 
@@ -55,7 +55,7 @@ You are to perform three steps on the provided image of a document.
 
 Task: Transcribe the entire text from the image into German, including all Fraktur characters.
 
-Attention: Pay close attention to accurately capturing all text elements.
+Attention: Pay close attention to accurately capturing all text elements. **DO NOT** summarize the table of content or index pages.  Capture everything on the page faithfully.
 
 Attention 2: Make sure you're reading each line only once. 
 
@@ -130,7 +130,7 @@ async def make_gpt_request(base64_image: str, model_name: str, headers: dict) ->
     async with aiohttp.ClientSession() as session:
         async with session.post(
             "https://api.openai.com/v1/chat/completions",
-            json=construct_payload(base64_image, model_name),
+            json=construct_payload_for_gpt(base64_image, model_name),
             headers=headers
         ) as response:
             return await response.json()
@@ -219,7 +219,7 @@ You are to perform three steps on the provided image of a document.
 
 Task: Transcribe the entire text from the image into German, including all Fraktur characters.
 
-Attention: Pay close attention to accurately capturing all text elements.
+Attention: Pay close attention to accurately capturing all text elements. **DO NOT** summarize the table of content or index pages.  Capture everything on the page faithfully.
 
 Attention 2: Make sure you're reading each line only once. 
 
