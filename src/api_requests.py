@@ -6,7 +6,6 @@ import requests
 import logging
 from PIL import Image
 import numpy as np 
-import backoff
 import re
 import os
 from src.processing import save_images, extract_image_bbox, compute_log_spectrum_1d
@@ -14,101 +13,37 @@ from src.utils import encode_image
 from pdf2image import convert_from_path
 import matplotlib.pyplot as plt
 from src.utils import pylab
+from src.constants import THREE_ROLE_USER_PROMPT, THREE_ROLE_SYSTEM_PROMPT
 
 from src.document_generation import setup_logger
 
 logger = logging.getLogger('logger_name')
 logger.setLevel(logging.INFO)
 
-def construct_payload_for_gpt(base64_image: str, model_name: str = "gpt-4o-mini-2024-07-18") -> dict:
+def construct_payload_for_gpt(base64_image: str) -> dict:
     """
     Constructs the payload for the GPT-4o model with a base64 encoded image.
 
     Args:
         base64_image (str): The base64 encoded image string.
-        model_name (str): The GPT-4o model name.
 
     Returns:
         dict: The constructed payload for the API request.
     """
+    model_name = "gpt-4o-2024-08-06"
     payload = {
         "model": model_name,
         "messages": [
           {
             "role": "system", 
-            "content": "You have three roles. First of all you are a professional OCR assistant. "
-            "Secondly, you identify the parts of your transcriptions to belong to header, body and footer sections. "
-            "Lastly, you are a GERMAN to ENGLISH translator that stays loyal to the style and "
-            "character of the original German text."
+            "content": THREE_ROLE_SYSTEM_PROMPT
           },
           {
             "role": "user",
             "content": [
               {
                 "type": "text",
-                "text": 
-"""Instructions:
-
-You are to perform three steps on the provided image of a document.
-
-**Step 1: OCR Transcription**
-
-Task: Transcribe the entire text from the image into German, including all Fraktur characters.
-
-Attention: Pay close attention to accurately capturing all text elements. **DO NOT** summarize the table of content or index pages. Summarization of index or table of contents pages would end up in failure of the task. Capture everything on the page faithfully. 
-
-Attention 2: Make sure you're reading each line only once. 
-
-Formatting: Wrap the entire transcription in <raw_german></raw_german> tags.
-
-Caution: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
-
-Separator: When you are done with Step 1, print the separator line:
-
---------------------------------------------------------------------
-**Step 2: Header-Body-Footer Analysis**
-
-Review: Look at the image and your transcription from Step 1.
-
-Verification: Ensure you haven't missed any parts; if you did, transcribe and include them now.
-
-**Caution 1**: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
-**Caution 2**: Pay close attention to accurately capturing and copying over all text elements in the content. **DO NOT** summarize any of the text content. Summarization of index or table of contents pages would end up in failure of the task. 
-
-**Categorization**:
-
-Header: If you detect a header (e.g., chapter title or section heading), wrap it inside <header></header> tags. If there's no header, omit the <header></header> tags.
-Body: Wrap the main body of the text inside <body></body> tags.
-Footer: If you detect any footnotes, wrap them inside <footer></footer> tags. If there are no footnotes, omit the <footer></footer> tags.
-Formatting: Wrap this structured transcription inside <german></german> tags.
-
-Separator: When you are done with Step 2, print the separator line again:
-
---------------------------------------------------------------------
-**Step 3: Translation (German to English)**
-
-Task: Translate the structured German text from Step 2 into English.
-Structure: Maintain the same <header>, <body>, and <footer> sections in your translation.
-Formatting: Wrap the translated text inside <english></english> tags.
-
-Example Output Format:
-
-<raw_german>
-... (transcribed German text) ...
-</raw_german>
---------------------------------------------------------------------
-<german>
-<header> ... </header>
-<body> ... </body>
-<footer> ... </footer>
-</german>
---------------------------------------------------------------------
-<english>
-<header> ... </header>
-<body> ... </body>
-<footer> ... </footer>
-</english>"""
-              },
+                "text": THREE_ROLE_USER_PROMPT},
               {
                 "type": "image_url",
                 "image_url": {
@@ -123,38 +58,28 @@ Example Output Format:
     }
     return payload
 
-async def make_gpt_request(base64_image: str, model_name: str, headers: dict) -> dict:
+async def make_gpt_request(base64_image: str, headers: dict) -> dict:
     """ Asynchronous version of send_gpt_request """
-
-    logger.info(f"In make_gpt_request, model_name: {model_name}")
+    
+    logger.info(f"In make_gpt_request")
     
     async with aiohttp.ClientSession() as session:
         async with session.post(
             "https://api.openai.com/v1/chat/completions",
-            json=construct_payload_for_gpt(base64_image, model_name),
+            json=construct_payload_for_gpt(base64_image),
             headers=headers
         ) as response:
             return await response.json()
 
-async def make_claude_request(base64_image: str, model_name: str="claude-3-5-sonnet-20241022") -> dict:
+async def make_claude_request(base64_image: str) -> dict:
     """
     Make an asynchronous request to the Anthropic API w/ built-in retries and error-handling.
     """
-    logger = logging.getLogger('logger_name')
-    
-    # @backoff.on_exception(
-    #     backoff.expo,             # Use exponential backoff strategy (1s, 2s, 4s, 8s ..)
-    #     (aiohttp.ClientError,     # Retry on HTTP client errors
-    #     ValueError),              # Also retry on our custom ValueError
-    #     max_tries=5,              # Maximum number of attempts
-    #     max_time=300              # Maximum total time in seconds (5 minutes)
-    #     )
-    
-    logger.info(f"In make_claude_request, model_name: {model_name}")
-    max_retries = 5
-    base_delay = 1  # Starting delay in seconds
-    max_delay = 64  # Maximum delay between retries
 
+    model_name = "claude-3-5-sonnet-20241022"
+    logger = logging.getLogger('logger_name')
+    logger.info(f"In make_claude_request, model_name: {model_name}")
+    
     async def _make_request(retry_count: int = 0):
         async with aiohttp.ClientSession() as session:
             # Construct payload first to validate it
@@ -166,8 +91,6 @@ async def make_claude_request(base64_image: str, model_name: str="claude-3-5-son
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json"
             }
-            
-            # logger.debug(f"Making request with headers: {headers}")
             
             async with session.post(
                 "https://api.anthropic.com/v1/messages",
@@ -204,78 +127,14 @@ def construct_payload_for_claude(base64_image: str, model_name: str = "claude-3-
         # Construct the payload
         payload = {
             "model": model_name,
-            "system": "You have three roles. First of all you are a professional OCR assistant. "
-            "Secondly, you identify the parts of your transcriptions to belong to header, body and footer sections. "
-            "Lastly, you are a GERMAN to ENGLISH translator that stays loyal to the style and "
-            "character of the original German text.",            
+            "system": THREE_ROLE_SYSTEM_PROMPT,            
             "messages": [
                 {
                     "role": "user",
                     "content": [
                         {
                             "type": "text",
-                            "text": 
-"""Instructions:
-
-You are to perform three steps on the provided image of a document.
-
-**Step 1: OCR Transcription**
-
-Task: Transcribe the entire text from the image into German, including all Fraktur characters.
-
-Attention: Pay close attention to accurately capturing all text elements. **DO NOT** summarize the table of content or index pages. Summarization of index or table of contents pages would end up in failure of the task. Capture everything on the page faithfully. 
-
-Attention 2: Make sure you're reading each line only once. 
-
-Formatting: Wrap the entire transcription in <raw_german></raw_german> tags.
-
-Caution: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
-
-Separator: When you are done with Step 1, print the separator line:
-
---------------------------------------------------------------------
-**Step 2: Header-Body-Footer Analysis**
-
-Review: Look at the image and your transcription from Step 1.
-
-Verification: Ensure you haven't missed any parts; if you did, transcribe and include them now.
-
-**Caution 1**: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
-**Caution 2**: Pay close attention to accurately capturing and copying over all text elements in the content. **DO NOT** summarize any of the text content. Summarization of index or table of contents pages would end up in failure of the task. 
-
-**Categorization**:
-
-Header: If you detect a header (e.g., chapter title or section heading), wrap it inside <header></header> tags. If there's no header, omit the <header></header> tags.
-Body: Wrap the main body of the text inside <body></body> tags.
-Footer: If you detect any footnotes, wrap them inside <footer></footer> tags. If there are no footnotes, omit the <footer></footer> tags.
-Formatting: Wrap this structured transcription inside <german></german> tags.
-
-Separator: When you are done with Step 2, print the separator line again:
-
---------------------------------------------------------------------
-**Step 3: Translation (German to English)**
-
-Task: Translate the structured German text from Step 2 into English.
-Structure: Maintain the same <header>, <body>, and <footer> sections in your translation.
-Formatting: Wrap the translated text inside <english></english> tags.
-
-Example Output Format:
-
-<raw_german>
-... (transcribed German text) ...
-</raw_german>
---------------------------------------------------------------------
-<german>
-<header> ... </header>
-<body> ... </body>
-<footer> ... </footer>
-</german>
---------------------------------------------------------------------
-<english>
-<header> ... </header>
-<body> ... </body>
-<footer> ... </footer>
-</english>"""
+                            "text": THREE_ROLE_USER_PROMPT
                         },
                         {
                             "type": "image",
@@ -334,9 +193,9 @@ async def process_single_page(fname: str, model_name: str, headers: dict, plotte
     base64_image = encode_image(cropped_image)
 
     if model_name.startswith('gpt'):
-        response_dict = await make_gpt_request(base64_image, model_name, headers)
+        response_dict = await make_gpt_request(base64_image, headers)
     else:
-        response_dict = await make_claude_request(base64_image, model_name)
+        response_dict = await make_claude_request(base64_image)
 
     if 'content' in response_dict:
         # Anthropic model
@@ -380,5 +239,7 @@ def extract_text_section(pageno: str, content: str, section: str) -> str:
     match = re.search(f'<{section}>(.*?)</{section}>', content, re.DOTALL)
     if match is None:
         logger.info(f'Pageno: {pageno}, "{section}" section was not found')
+        import ipdb
+        ipdb.set_trace()
         return ""
     return match.group(1)
