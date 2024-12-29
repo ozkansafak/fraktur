@@ -55,7 +55,7 @@ You are to perform three steps on the provided image of a document.
 
 Task: Transcribe the entire text from the image into German, including all Fraktur characters.
 
-Attention: Pay close attention to accurately capturing all text elements. **DO NOT** summarize the table of content or index pages.  Capture everything on the page faithfully.
+Attention: Pay close attention to accurately capturing all text elements. **DO NOT** summarize the table of content or index pages. Summarization of index or table of contents pages would end up in failure of the task. Capture everything on the page faithfully. 
 
 Attention 2: Make sure you're reading each line only once. 
 
@@ -72,9 +72,10 @@ Review: Look at the image and your transcription from Step 1.
 
 Verification: Ensure you haven't missed any parts; if you did, transcribe and include them now.
 
-Caution: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
+**Caution 1**: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
+**Caution 2**: Pay close attention to accurately capturing and copying over all text elements in the content. **DO NOT** summarize any of the text content. Summarization of index or table of contents pages would end up in failure of the task. 
 
-Categorization:
+**Categorization**:
 
 Header: If you detect a header (e.g., chapter title or section heading), wrap it inside <header></header> tags. If there's no header, omit the <header></header> tags.
 Body: Wrap the main body of the text inside <body></body> tags.
@@ -203,7 +204,10 @@ def construct_payload_for_claude(base64_image: str, model_name: str = "claude-3-
         # Construct the payload
         payload = {
             "model": model_name,
-            "system": "You are an OCR assistant and translator specializing in German texts.",
+            "system": "You have three roles. First of all you are a professional OCR assistant. "
+            "Secondly, you identify the parts of your transcriptions to belong to header, body and footer sections. "
+            "Lastly, you are a GERMAN to ENGLISH translator that stays loyal to the style and "
+            "character of the original German text.",            
             "messages": [
                 {
                     "role": "user",
@@ -219,7 +223,7 @@ You are to perform three steps on the provided image of a document.
 
 Task: Transcribe the entire text from the image into German, including all Fraktur characters.
 
-Attention: Pay close attention to accurately capturing all text elements. **DO NOT** summarize the table of content or index pages.  Capture everything on the page faithfully.
+Attention: Pay close attention to accurately capturing all text elements. **DO NOT** summarize the table of content or index pages. Summarization of index or table of contents pages would end up in failure of the task. Capture everything on the page faithfully. 
 
 Attention 2: Make sure you're reading each line only once. 
 
@@ -236,9 +240,10 @@ Review: Look at the image and your transcription from Step 1.
 
 Verification: Ensure you haven't missed any parts; if you did, transcribe and include them now.
 
-Caution: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
+**Caution 1**: Pay attention to identify the paragraphs as a whole and not erroneously place a carriage return at the end of each line.
+**Caution 2**: Pay close attention to accurately capturing and copying over all text elements in the content. **DO NOT** summarize any of the text content. Summarization of index or table of contents pages would end up in failure of the task. 
 
-Categorization:
+**Categorization**:
 
 Header: If you detect a header (e.g., chapter title or section heading), wrap it inside <header></header> tags. If there's no header, omit the <header></header> tags.
 Body: Wrap the main body of the text inside <body></body> tags.
