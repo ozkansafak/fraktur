@@ -239,7 +239,5 @@ def extract_text_section(pageno: str, content: str, section: str) -> str:
     match = re.search(f'<{section}>(.*?)</{section}>', content, re.DOTALL)
     if match is None:
         logger.info(f'Pageno: {pageno}, "{section}" section was not found')
-        import ipdb
-        ipdb.set_trace()
         return ""
     return match.group(1)
