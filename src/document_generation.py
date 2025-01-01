@@ -25,12 +25,15 @@ def setup_logger(name: str) -> logging.Logger:
         console_handler.setLevel(logging.INFO)
         
         # Create formatter
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(funcName)s - L%(lineno)d - %(levelname)s - %(message)s')
         console_handler.setFormatter(formatter)
         
         # Add handler to logger
         logger.addHandler(console_handler)
-    
+        
+        # Don't propagate message to parent loggers
+        logger.propagate = False 
+
     return logger
 
 def strip_newlines(text: str) -> str:

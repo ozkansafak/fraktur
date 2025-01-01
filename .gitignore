@@ -7,6 +7,7 @@
 output_data/**
 input_data/**
 !output_data/readme_figures
+!output_data/*.json
 figures/**
 **/__pycache__/**
 **/.ipynb_checkpoints
