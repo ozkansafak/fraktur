@@ -55,7 +55,7 @@ def extract_sections_in_order(text: str) -> list:
         list: List of tuples (section_type, section_content) in order of appearance
     """
     # Pattern to match any section
-    pattern = r'<(header|body|footer)>(.*?)</\1>'
+    pattern = r'<(pageno|header|body|footer)>(.*?)</\1>'
     
     # Find all sections in order of appearance
     sections = []
@@ -65,6 +65,11 @@ def extract_sections_in_order(text: str) -> list:
         sections.append((section_type, content))
     
     return sections
+
+
+def add_tab_stop(paragraph, position_in_inches):
+    """Adds a right-aligned tab stop to the paragraph."""
+    paragraph.paragraph_format.tab_stops.add_tab_stop(Inches(position_in_inches), alignment=WD_PARAGRAPH_ALIGNMENT.RIGHT)
 
 def add_bottom_border(paragraph: Any) -> None:
     """Adds a bottom border to a paragraph."""
@@ -131,14 +136,27 @@ def save_document(texts: dict,
         # Get sections in their original order
         sections = extract_sections_in_order(text)
 
-        # add page number
-        header_para = document.add_paragraph(f"Page {pageno}\n")
-        header_para.style = styles['header']
-        header_para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+        # Check the first section type
+        if sections and sections[0][0] == 'pageno':
+            # Handle case where <pageno> is the first section type
+            content = sections.pop(0)[1]  # Remove <pageno> and get content
+            header_para = document.add_paragraph(f"Page: {content}\tkeyno: {pageno}")
+        else:
+            # Handle case where <pageno> is not the first section type
+            header_para = document.add_paragraph(f"\tkeyno: {pageno}")
+        
+        border_para = document.add_paragraph()
+        add_bottom_border(border_para)
 
-        for section_type, content in sections:
+        # Apply style and alignment for the first line
+        header_para.style = styles['header']
+        tab_stop_position = section.page_width.inches - section.right_margin.inches
+        add_tab_stop(header_para, tab_stop_position)
+
+        for i, (section_type, content) in enumerate(sections):
+
             if section_type == 'header':
-                # Add page number to header content
+                # Add header content
                 header_para = document.add_paragraph(content)
                 header_para.style = styles['header']
                 header_para.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
