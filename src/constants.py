@@ -5,7 +5,7 @@ You are to perform three steps on the provided image of a document.
 
 **General Guidelines**:
 - **Accuracy**: Capture all text elements exactly as they appear. Do **NOT** summarize or skip content, including index or table of contents pages.
-- **Paragraph Integrity**: Transcribe paragraphs as cohesive blocks. Do not add carriage returns at the end of each line unless explicitly present.
+- **Paragraph Integrity**: Transcribe paragraphs as cohesive blocks. Do not add carriage returns (`\\n`) at the end of each line unless explicitly present.
 - **Separator**: After completing each step, print the following separator line: "-----"
 
 **Step 1: OCR Transcription in to Raw German Text**
@@ -14,7 +14,7 @@ Task: Transcribe the entire text from the image into German, including all Frakt
 
 **Instructions**:
 1. **Accuracy**: 
-   - Faithfully transcribe all text elements **WITHOUT** summarizing. 
+   - Faithfully transcribe all text elements **WITHOUT ANY SUMMARIZATION** even if the page consists of dense repetitive looking text. 
    - Don't repetitively extract the same letter or the same '.' character unlike in the original document.
 
 2. **Page Number Detection**:
@@ -22,7 +22,7 @@ Task: Transcribe the entire text from the image into German, including all Frakt
    - Wrap only this number in `<pageno></pageno>` tags (e.g., `<pageno>13</pageno>` or `<pageno>XII</pageno>`).
    - **Caution**:
      - Numbers listed in a **Table of Contents** or an **Index** page should **never** be wrapped in `<pageno>` tags, as they refer to other pages in the book.
-     - There should be at most one `<pageno>` tag per page, or none if no page number exists for the current page.
+     - There should be at most one `<pageno>` tag per page, (or none if no page number exists for the current page.)
 
 3. **Formatting**: Wrap the entire transcription in `<raw_german></raw_german>` tags.
 
@@ -90,10 +90,10 @@ Task: Translate the structured German text from Step 2 into English.
 THREE_ROLE_SYSTEM_PROMPT = """You have three roles:
 
 1. **OCR Transcription Assistant**:
-   - Accurately transcribe text from images, including Fraktur characters, and ensure no content from the original page is missed or summarized.
+   - Accurately transcribe text from images, including Fraktur characters, and ensure no content from the original page is missed. Do not attempt to summarize content at your own will. Transcribe the input fraktur document.
 
 2. **Text Structuring Expert**:
-   - Categorize the transcribed text into `<pageno>`, `<header>`, `<body>`, and `<footer>` sections based on its structure and context.
+   - Categorize the transcribed text into `<pageno>`, `<header>`, `<body>`, and `<footer>` sections based on its structure and context. Do not attempt to summarize content. Copy the transcribed text in its entirety, only inserting the appropriate tags into the text.
 
 3. **German to English Translator**:
    - Translate the structured text faithfully, staying loyal to the style and character of the original German text.
@@ -145,18 +145,18 @@ In the **Given Data** section below, you are presented the translation of `<germ
 
 **Caution**:
 - Carry over the content of `<english_page_1_old>` exactly as provided, except for necessary updates related to `fragment_1` and `fragment_2`.
-1. Do not summarize, abbreviate, or skip any text from `<english_page_1_old>` or the fragments. All content must be faithfully carried over and clearly structured.
+1. Do not summarize, abbreviate, or skip any text from `<english_page_1_old>` or the fragments. 
 2. Placeholder outputs such as:
      ```
-     Same content as above, maintaining all structure and formatting
+     [Same content as above, maintaining all structure and formatting]
      ```
      or
      ```
-     continued content...
+     [continued content...]
      ```
      or 
      ```
-     and so on with all military abbreviations translated
+     [and so on with all military abbreviations translated...]
      ```
 are strictly prohibited. Transcribe or translate the full content without omission or summary.
 3. Ensure that all parts of `<english_page_1_old>` not impacted by the fragmented sentences remain intact and unchanged.

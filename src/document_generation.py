@@ -6,35 +6,51 @@ from docx.oxml import OxmlElement
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 from docx.shared import Inches
 import re
+import os
+import PyPDF2
 import logging
 from dataclasses import dataclass
 from typing import Tuple, Dict, Any, Optional
+from src.utils import setup_logger
 
 logger = logging.getLogger('logger_name')
 logger.setLevel(logging.INFO)
 
 
-def setup_logger(name: str) -> logging.Logger:
-    """Setup a simple logger that only outputs to stdout."""
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+def chapter_splitter(input_pdf_path):
+    logger = setup_logger('time_logger')
     
-    if not logger.handlers:
-        # Create console handler
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
-        
-        # Create formatter
-        formatter = logging.Formatter('%(funcName)s - L%(lineno)d - %(levelname)s - %(message)s')
-        console_handler.setFormatter(formatter)
-        
-        # Add handler to logger
-        logger.addHandler(console_handler)
-        
-        # Don't propagate message to parent loggers
-        logger.propagate = False 
+    # Input PDF file path
+    input_pdf_path = "../input_data/Der Weltkrieg v5 East Front.pdf"
+    output_folder = "../input_data/Der Weltkrieg v5"
+    
+    # Ensure the output folder exists
+    os.makedirs(output_folder, exist_ok=True)
+    
+    # Open the PDF and split pages
+    try:
+        with open(input_pdf_path, 'rb') as file:
+            pdf_reader = PyPDF2.PdfReader(file)
+            num_pages = len(pdf_reader.pages)
+            logger.info(f"Extracted {num_pages} pages from PDF")
+    
+            for i, page in enumerate(pdf_reader.pages):
+                # Create a new PDF writer for each page
+                pdf_writer = PyPDF2.PdfWriter()
+                pdf_writer.add_page(page)
+    
+                # Save the current page to a new file
+                output_file_path = os.path.join(output_folder, f"page_{i+1:03d}.pdf")
+                with open(output_file_path, 'wb') as output_file:
+                    pdf_writer.write(output_file)
+                
+                logger.debug(f"Saved page {i+1} to {output_file_path}")
+    
+        logger.info(f"All pages have been split and saved to {output_folder}")
+    
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
 
-    return logger
 
 def strip_newlines(text: str) -> str:
     """Clean text by removing newlines adjacent to section tags."""

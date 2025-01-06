@@ -6,6 +6,7 @@ import requests
 import logging
 from PIL import Image
 import numpy as np 
+import ipdb
 import re
 import os
 from src.processing import save_images, extract_image_bbox, compute_log_spectrum_1d
@@ -14,8 +15,9 @@ from pdf2image import convert_from_path
 import matplotlib.pyplot as plt
 from src.utils import pylab
 from src.constants import THREE_ROLE_USER_PROMPT, THREE_ROLE_SYSTEM_PROMPT
-
+from src.utils import log_execution_time, count_num_tokens
 from src.document_generation import setup_logger
+import openai
 
 logger = logging.getLogger('logger_name')
 logger.setLevel(logging.INFO)
@@ -53,16 +55,21 @@ def construct_payload_for_gpt(base64_image: str) -> dict:
             ]
           }
         ],
-        "max_tokens": 6000,
+        "max_tokens": 10000,
         "temperature": 0.1
     }
     return payload
 
-async def make_gpt_request(base64_image: str, headers: dict) -> dict:
+async def make_gpt_request(base64_image: str) -> dict:
     """ Asynchronous version of send_gpt_request """
     
     logger.info(f"In make_gpt_request")
     
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {openai.api_key}"
+    }
+
     async with aiohttp.ClientSession() as session:
         async with session.post(
             "https://api.openai.com/v1/chat/completions",
@@ -147,7 +154,7 @@ def construct_payload_for_claude(base64_image: str, model_name: str = "claude-3-
                     ]
                 }
             ],
-            "max_tokens": 6000,
+            "max_tokens": 8192,
             "temperature": 0.1
         }
         
@@ -161,7 +168,7 @@ def construct_payload_for_claude(base64_image: str, model_name: str = "claude-3-
         logger.error(f"Error constructing payload: {str(e)}")
         raise
 
-async def process_single_page(fname: str, model_name: str, headers: dict, plotter: bool, pageno: str, extract: bool = True) -> Tuple[str, str, str, str]:
+async def process_single_page(fname: str, model_name: str, plotter: bool, pageno: str, extract: bool = True) -> Tuple[str, str, str, str]:
     """ Asynchronously processes a single page """
     # Load and process image (this is CPU-bound, keep it synchronous)
     image = convert_from_path(fname)[0]
@@ -193,7 +200,7 @@ async def process_single_page(fname: str, model_name: str, headers: dict, plotte
     base64_image = encode_image(cropped_image)
 
     if model_name.startswith('gpt'):
-        response_dict = await make_gpt_request(base64_image, headers)
+        response_dict = await make_gpt_request(base64_image)
     else:
         response_dict = await make_claude_request(base64_image)
 
@@ -238,6 +245,6 @@ def extract_text_section(pageno: str, content: str, section: str) -> str:
     
     match = re.search(f'<{section}>(.*?)</{section}>', content, re.DOTALL)
     if match is None:
-        logger.info(f'Pageno: {pageno}, "{section}" section was not found')
-        return ""
+        logger.error(f'Pageno: {pageno}, "{section}" section was not found')
+        return f'Pageno: {pageno}, "<{section}>" section was not found'
     return match.group(1)
