@@ -17,12 +17,8 @@ logger = logging.getLogger('logger_name')
 logger.setLevel(logging.INFO)
 
 
-def chapter_splitter(input_pdf_path):
+def chapter_splitter(input_pdf_path, output_folder):
     logger = setup_logger('time_logger')
-    
-    # Input PDF file path
-    input_pdf_path = "../input_data/Der Weltkrieg v5 East Front.pdf"
-    output_folder = "../input_data/Der Weltkrieg v5"
     
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)

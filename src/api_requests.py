@@ -1,26 +1,19 @@
 import aiohttp
 import asyncio
 from typing import Dict, Tuple, List
-import time
-import requests
 import logging
 from PIL import Image
 import numpy as np 
 import ipdb
 import re
 import os
-from src.processing import save_images, extract_image_bbox, compute_log_spectrum_1d
-from src.utils import encode_image
-from pdf2image import convert_from_path
-import matplotlib.pyplot as plt
-from src.utils import pylab
-from src.constants import THREE_ROLE_USER_PROMPT, THREE_ROLE_SYSTEM_PROMPT
-from src.utils import log_execution_time, count_num_tokens
-from src.document_generation import setup_logger
 import openai
+from src.processing import save_images, extract_image_bbox, compute_log_spectrum_1d
+from src.utils import pylab, plt, encode_image, log_execution_time, count_num_tokens
+from pdf2image import convert_from_path
+from src.constants import THREE_ROLE_USER_PROMPT, THREE_ROLE_SYSTEM_PROMPT
+from src.document_generation import setup_logger, logger
 
-logger = logging.getLogger('logger_name')
-logger.setLevel(logging.INFO)
 
 def construct_payload_for_gpt(base64_image: str) -> dict:
     """
@@ -55,7 +48,7 @@ def construct_payload_for_gpt(base64_image: str) -> dict:
             ]
           }
         ],
-        "max_tokens": 10000,
+        "max_tokens": 5000,
         "temperature": 0.1
     }
     return payload
@@ -154,7 +147,7 @@ def construct_payload_for_claude(base64_image: str, model_name: str = "claude-3-
                     ]
                 }
             ],
-            "max_tokens": 8192,
+            "max_tokens": 5000,
             "temperature": 0.1
         }
         
@@ -215,12 +208,13 @@ async def process_single_page(fname: str, model_name: str, plotter: bool, pageno
         raise ValueError("Unexpected response structure")
 
     content = re.sub(r'\n+', '\n', content)  # '\n\n\n' -> '\n'
+    token_count = count_num_tokens(content)
 
     # Extract text sections (moved to separate function for clarity)
     raw_german_text = extract_text_section(pageno, content, 'raw_german')
     german_text = extract_text_section(pageno, content, 'german')
     english_text = extract_text_section(pageno, content, 'english')
-
+    
     if plotter:
         # Plot the images with size proportional to their pixel count.
         height, width, _ = np.array(image).shape
@@ -236,7 +230,7 @@ async def process_single_page(fname: str, model_name: str, plotter: bool, pageno
         plt.gca().axis('off')
         plt.show()
 
-    return content, raw_german_text, german_text, english_text
+    return content, token_count, raw_german_text, german_text, english_text
 
 def extract_text_section(pageno: str, content: str, section: str) -> str:
     """Helper function to extract text sections with error handling"""
@@ -245,6 +239,6 @@ def extract_text_section(pageno: str, content: str, section: str) -> str:
     
     match = re.search(f'<{section}>(.*?)</{section}>', content, re.DOTALL)
     if match is None:
-        logger.error(f'Pageno: {pageno}, "{section}" section was not found')
-        return f'Pageno: {pageno}, "<{section}>" section was not found'
+        logger.error(f'pageno: {pageno}, "{section}" section was not found')
+        return f'pageno: {pageno}, "<{section}>" section was not found'
     return match.group(1)

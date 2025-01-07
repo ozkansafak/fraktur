@@ -14,7 +14,7 @@ Task: Transcribe the entire text from the image into German, including all Frakt
 
 **Instructions**:
 1. **Accuracy**: 
-   - Faithfully transcribe all text elements **WITHOUT ANY SUMMARIZATION** even if the page consists of dense repetitive looking text. 
+   - Faithfully transcribe all textual elements including every single character, and **DO NOT** summarize any part] of the original document. 
    - Don't repetitively extract the same letter or the same '.' character unlike in the original document.
 
 2. **Page Number Detection**:
