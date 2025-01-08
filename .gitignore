@@ -4,14 +4,12 @@
 *.log
 *.out
 .vscode/**
-output_data/**
 input_data/**
+output_data/**
+!output_data/Der Weltkrieg v*
+!output_data/Der Weltkrieg v*/*.docx
 !output_data/readme_figures
 !output_data/*/*.json
-!output_data/*/*.pdf
-!output_data/*/*.docx
-!output_data/Der Weltkrieg v7/*.docx
-!output_data/Der Weltkrieg v7/*.pdf
 figures/**
 **/__pycache__/**
 **/.ipynb_checkpoints

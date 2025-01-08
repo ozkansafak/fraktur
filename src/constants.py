@@ -106,12 +106,12 @@ In the **Given Data** section below, you are presented the translation of `<germ
 ------------------
 
 **Chain of Thought Reasoning**
-1. **Identify Potential Fragment 1 (The last sentence at the very bottom of `<german_page_1>`)**:
+1. **Identify Potential Fragment 1 (The last sentence at the bottom of `<german_page_1>`)**:
    - Extract the portion of German text at the end of `<german_page_1>` that may or may not be a complete sentence on its own.
    - This German piece of text is the candidate for `fragment_1`.
    - Output `fragment_1` inside `<fragment_1>...</fragment_1>` tags.
 
-2. **Identify Potential Fragment 2 (The first sentence at the very top of `<german_page_2>`)**:
+2. **Identify Potential Fragment 2 (The first sentence at the top of `<german_page_2>`)**:
    - Extract the portion of German text at the top of `<german_page_2>` that appears to complete the thought or grammatical structure of `fragment_1`.
    - This German piece of text is the candidate for `fragment_2`. Include **only** the text necessary to complete `fragment_1` into a single coherent sentence.
    - Output `fragment_2` inside `<fragment_2>...</fragment_2>` tags.
@@ -185,6 +185,10 @@ are strictly prohibited. Transcribe or translate the full content without omissi
    - **Case 2**:
        - If no valid fragmentation exists, output `english_page_1_old` unchanged.
        - If `fragment_2` is empty, explicitly include `<fragment_2></fragment_2>` in the output
+    **Caution**:
+    - Do not mix `<english_page_1_old>` and `<english_page_1_new>` tags within the same section
+        - <english_page_1_old>...</english_page_1_old> represents the original English translation of the text from <german_page_1>
+        - <english_page_1_new>...</english_page_1_new> represents the updated English translation of <german_page_1> after addressing any fragmented sentences spanning <german_page_1> and <german_page_2>.
 
 5. **Putting it All Together**:
    - Note: `<fragment_2>` (from the top of `<german_page_2>`) is distinct and must only be included if it forms a coherent sentence with `<fragment_1>`.

@@ -3,14 +3,12 @@ from PIL import Image
 import logging
 from io import BytesIO
 import tiktoken
+import inspect
 import base64
 import sys, os, re, json
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
 from typing import Dict, Tuple, List, Callable
-
-logger = logging.getLogger('logger_name')
-logger.setLevel(logging.INFO)
 
 # # Get the root path of the project
 sys.path.append(os.path.abspath(".."))
@@ -192,11 +190,13 @@ def dump_fragmented_output_to_json(foldername, english_texts_defragmented, fragm
     with open(f'../output_data/{foldername}/contents.json', 'w') as f:
         json.dump(contents, f)
         
-    print(f'dumped fragmented outputs foldername: {foldername}. max(fragments_2.keys)={max(set(fragments_2).difference(set([None])))}')
+    print(f'dumped fragmented outputs foldername: {foldername}.\nmax(keys) = {max(set(fragments_2).difference(set([None])))}')
 
 
 def dump_output_to_json(foldername, raw_german_texts, german_texts, english_texts):
+    logger = setup_logger('logger_name')  
     
+
     if not os.path.exists(f'../output_data/{foldername}'):
         os.makedirs(f'../output_data/{foldername}')
         print(f'../output_data/{foldername} created')
@@ -208,8 +208,11 @@ def dump_output_to_json(foldername, raw_german_texts, german_texts, english_text
     with open(f'../output_data/{foldername}/english_texts.json', 'w') as f:
         json.dump(english_texts, f)
 
+    print(f"\ndumped to ../output_data/{foldername}/*json files.") 
+
 
 def load_output_from_json(foldername, load_defrag=False):
+    logger = setup_logger('logger_name')  
     # load `raw_german_texts`, `german_texts`, `english_texts` from disk.
     with open(f'../output_data/{foldername}/raw_german_texts.json', 'r') as f:
         raw_german_texts = json.load(f)
@@ -224,23 +227,36 @@ def load_output_from_json(foldername, load_defrag=False):
             with open(f'../output_data/{foldername}/english_texts_defragmented.json', 'r') as f:
                 english_texts_defragmented = json.load(f)
         else:
-            logger.error(f"Path doesn't exist: ../output_data/{foldername}/english_texts_defragmented.json")
+            logger.error(f"`english_texts_defragmented` path doesn't exist: ../output_data/{foldername}/english_texts_defragmented.json")
 
     return raw_german_texts, german_texts, english_texts, english_texts_defragmented
 
 
 def logging_for_main(i, tasks, pageno, token_count, raw_german_text, german_text, english_text):
+    parent_function = inspect.stack()[1].function
+    logger = setup_logger('logger_name')  
+
+
     if 'section was not found' in english_text:
-        logger.error(f"pageno:{pageno}. 'section was not found' in english_text. token_count:{token_count}")
+        logger.error(f"{parent_function} pageno:{pageno}. `english_text` contains 'section was not found'. token_count:{token_count}")
     elif '[' in english_text:
         j = english_text.index('[')
-        logger.error(f"pageno:{pageno}. '[' present in english_text. token_count:{token_count}")
+        logger.error(f"{parent_function} pageno:{pageno}. '[' present in english_text. token_count:{token_count}")
         print('pageno:' + pageno + english_text[j:] + '\n'+ '---'*22)
     elif '[' in german_text:
         j = german_text.index('[')
-        logger.error(f"pageno:{pageno}. '[' present in german_text. token_count:{token_count}")
+        logger.error(f"{parent_function} pageno:{pageno}. '[' present in german_text. token_count:{token_count}")
         print('pageno:' + pageno + german_text[j:]+'\n' + '---'*22)
     else:
         logger.info(f"{i} of {len(tasks)-1} -- Successfully processed pageno:{pageno}. token_count:{token_count}")
     return
 
+def log_execution_time_synchronous(func: Callable):
+    def wrapper(*args, **kwargs):
+        logger = setup_logger('logger_name')  
+
+        start = time.time()
+        result = func(*args, **kwargs)
+        logger.info(f"Finished {func.__name__} in {time.time() - start:.2f} seconds.")
+        return result
+    return wrapper

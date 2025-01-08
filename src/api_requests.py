@@ -55,8 +55,7 @@ def construct_payload_for_gpt(base64_image: str) -> dict:
 
 async def make_gpt_request(base64_image: str) -> dict:
     """ Asynchronous version of send_gpt_request """
-    
-    logger.info(f"In make_gpt_request")
+    # logger.info(f"In make_gpt_request, model_name: gpt-4o-2024-08-06")
     
     headers = {
         "Content-Type": "application/json",
@@ -78,7 +77,7 @@ async def make_claude_request(base64_image: str) -> dict:
 
     model_name = "claude-3-5-sonnet-20241022"
     logger = logging.getLogger('logger_name')
-    logger.info(f"In make_claude_request, model_name: {model_name}")
+    # logger.info(f"In make_claude_request, model_name: {model_name}")
     
     async def _make_request(retry_count: int = 0):
         async with aiohttp.ClientSession() as session:
@@ -239,6 +238,6 @@ def extract_text_section(pageno: str, content: str, section: str) -> str:
     
     match = re.search(f'<{section}>(.*?)</{section}>', content, re.DOTALL)
     if match is None:
-        logger.error(f'pageno: {pageno}, "{section}" section was not found')
+        logger.error(f'pageno: {pageno}, section name:"{section}" was not found. token_count={count_num_tokens(content)}')
         return f'pageno: {pageno}, "<{section}>" section was not found'
     return match.group(1)
