@@ -194,4 +194,5 @@ def save_document(texts: dict,
     fname = f'../output_data/{folder_name}/{language}'
     document.save(f'{fname}.docx')
 
-    return document, fname
+    logger.info(f'saved to "{fname}"')
+    return document, logger

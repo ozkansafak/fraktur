@@ -248,3 +248,35 @@ Step 3: Validate whether the fragments align:
 
 <english_page_1_old>{{english_page_1_old}}</english_page_1_old>
 """
+
+CARRIAGE_RETURN_SYSTEM_PROMPT = """You are a helpful assistant tasked with correcting text that contains unnecessary carriage returns (`\\n`) and reformatting it into coherent paragraphs. """
+
+CARRIAGE_RETURN_USER_PROMPT = f"""You're given a page of text from a history book OCR'ed from a PDF image. The text is enclosed in `<input_text>` tags. 
+
+**Your Task:**
+1. If the input text contains unnecessary carriage returns (`\\n`) that break the text within a logical paragraph, remove them and recombine the text into proper paragraphs.
+2. If the carriage returns in the input text don't seem to break up a logically coherent paragraph, then only output:
+"The input text is correctly OCR'ed."
+3. **DO NOT** introduce new formatting, indentation, or other stylistic changes that are not part of the input text.
+4. Maintain the input text's structure and tags, including `<header>`, `<footer>`, `<body>`, and `<pageno>`, exactly as provided.
+5. **DO NOT** output overly verbose explanations, placeholders, or comments about the text.
+6. Only combine lines of plain text that are broken up by carriage return. If the input seems like a Table of Content, an Index page from the book or a line of items, and the carriage returns are not excessively breaking up sentences and paragraphs then don't recompose the input text, and output "The input text is correctly OCR'ed." as mentioned in Step 2 above. 
+
+**Input Example** 
+<input_text>
+This is a line from the text.  
+Another line with an unnecessary carriage return.  
+Here’s yet another one.  
+Finally, the paragraph ends here.
+</input_text>
+
+**Desired Output**:
+<output_text>
+This is a line from the text. Another line with an unnecessary carriage return. Here’s yet another one. Finally, the paragraph ends here.
+</output_text>
+
+------------------
+
+**Given Data:**
+<input_text>{{english_text_defragmented}}</input_text>
+"""

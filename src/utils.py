@@ -182,6 +182,14 @@ def find_bad_pagenos(all_pagenos, raw_german_texts, german_texts, english_texts,
     return bad_pagenos
 
 
+def dump_fixed_paragraphs_output_to_json(foldername,
+                                         english_texts_fixed_paragraphs,
+                                         ):
+    
+    with open(f'../output_data/{foldername}/english_texts_fixed_paragraphs.json', 'w') as f:
+        json.dump(english_texts_fixed_paragraphs, f)
+        
+
 def dump_fragmented_output_to_json(foldername, english_texts_defragmented, fragments_2, contents):
     with open(f'../output_data/{foldername}/english_texts_defragmented.json', 'w') as f:
         json.dump(english_texts_defragmented, f)
@@ -223,10 +231,10 @@ def load_output_from_json(foldername, load_defrag=False):
 
     english_texts_defragmented = None
     if load_defrag:
-        if os.path.exists(f'../output_data/{foldername}/english_texts_defragmented.json'):
-            with open(f'../output_data/{foldername}/english_texts_defragmented.json', 'r') as f:
+        try:
+            with open(f'../output_data/{foldername}/english_texts_defragmented.json', 'r', encoding="utf-8") as f:
                 english_texts_defragmented = json.load(f)
-        else:
+        except Exception as e:
             logger.error(f"`english_texts_defragmented` path doesn't exist: ../output_data/{foldername}/english_texts_defragmented.json")
 
     return raw_german_texts, german_texts, english_texts, english_texts_defragmented
