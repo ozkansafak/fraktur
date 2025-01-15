@@ -151,26 +151,26 @@ def find_bad_pagenos(all_pagenos, raw_german_texts, german_texts, english_texts,
 
         if pageno in raw_german_texts and '[' in raw_german_texts[pageno]:
             j = raw_german_texts[pageno].index('[')
-            print(f"\n> pageno: {pageno}. `raw_german_texts['{pageno}']`: {raw_german_texts[pageno][j:]}") 
+            print(f"\n> pageno: {pageno}. `raw_german_texts` {raw_german_texts[pageno][j:]}") 
             bad_pagenos.append(pageno)
             continue
 
         if pageno in english_texts and '[' in english_texts[pageno]:
             j = english_texts[pageno].index('[')
-            print(f"\n> pageno: {pageno}. `english_texts['{pageno}']`: {english_texts[pageno][j:]}")
+            print(f"\n> pageno: {pageno}. `english_texts` {english_texts[pageno][j:]}")
             bad_pagenos.append(pageno)
             continue
 
         if pageno in raw_german_texts and 'section was not found' in raw_german_texts[pageno]:
-            print(f"\n> pageno: {pageno}. `raw_german_texts['{pageno}']`: {raw_german_texts[pageno]}")
+            print(f"\n> pageno: {pageno}. `raw_german_texts` {raw_german_texts[pageno]}")
             bad_pagenos.append(pageno)
 
         elif pageno in german_texts and 'section was not found' in german_texts[pageno]:
-            print(f"\n> pageno: {pageno}. `german_texts['{pageno}']`: {german_texts[pageno]}")
+            print(f"\n> pageno: {pageno}. `german_texts` {german_texts[pageno]}")
             bad_pagenos.append(pageno)
 
         elif pageno in english_texts and 'section was not found' in english_texts[pageno]:
-            print(f"\n> pageno: {pageno}. `english_texts['{pageno}']`: {english_texts[pageno]}")
+            print(f"\n> pageno: {pageno}. `english_texts` {english_texts[pageno]}")
             bad_pagenos.append(pageno)
 
         elif pageno not in english_texts:
@@ -198,7 +198,7 @@ def dump_fragmented_output_to_json(foldername, english_texts_defragmented, fragm
     with open(f'../output_data/{foldername}/contents.json', 'w') as f:
         json.dump(contents, f)
         
-    print(f'dumped fragmented outputs foldername: {foldername}.\nmax(keys) = {max(set(fragments_2).difference(set([None])))}')
+    print(f'dumped fragmented outputs foldername: {foldername}.')
 
 
 def dump_output_to_json(foldername, raw_german_texts, german_texts, english_texts):
