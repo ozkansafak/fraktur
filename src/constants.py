@@ -272,6 +272,7 @@ CARRIAGE_RETURN_USER_PROMPT = f"""You're given a page of text from a history boo
 4. Maintain the input text's structure and tags, including `<header>`, `<footer>`, `<body>`, and `<pageno>`, exactly as provided.
 5. **DO NOT** output overly verbose explanations, placeholders, or comments about the text.
 6. Only combine lines of plain text that are broken up by carriage return. If the input seems like a Table of Content, an Index page from the book or a line of items, and the carriage returns are not excessively breaking up sentences and paragraphs then don't recompose the input text, and output "The input text is correctly OCR'ed." as mentioned in Step 2 above. 
+7. If you decide to combine artificially broken up sentences, there might still be a legitimate carriage return that identifies the beginning of a legitimate paragraph. In this case leave the carriage return there.
 
 **Input Example** 
 <input_text>World War I on the Eastern Front was very different from 
